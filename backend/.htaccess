@@ -1,0 +1,7 @@
+# Enable Authorization header for Apache
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+
+# Also set it as environment variable
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1

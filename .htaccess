@@ -1,0 +1,11 @@
+# Enable mod_rewrite
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Pass Authorization header
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+</IfModule>
+
+# Set environment variable for Authorization
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
