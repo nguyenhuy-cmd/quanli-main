@@ -9,7 +9,7 @@
 // define('DB_USER', 'root');              // MySQL Username (local)
 // define('DB_PASS', '');   // MySQL password (local XAMPP usually empty)
 
-Production / hosting example (commented) - replace with real values when used:
+// Production / hosting example (commented) - replace with real values when used:
 define('DB_HOST', 'sql209.infinityfree.com');
 define('DB_NAME', 'if0_40315513_hrm_db');
 define('DB_USER', 'if0_40315513');
