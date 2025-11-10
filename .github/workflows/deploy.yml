@@ -1,0 +1,38 @@
+name: Deploy to Hosting via FTP
+
+# Trigger: chạy mỗi khi push code lên nhánh main
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # cho phép chạy thủ công từ GitHub Actions tab
+
+jobs:
+  deploy:
+    name: Deploy files via FTP
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Upload files via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          # Thư mục đích trên hosting (thường là htdocs, public_html, www, hoặc để trống)
+          server-dir: /htdocs/
+          # Các file/thư mục bỏ qua khi upload
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/tests/**
+            **/tools/**
+            **/.vscode/**
+            **/README.md
+            **/composer.json
+            **/docker-compose.yml
+            **/.github/**
