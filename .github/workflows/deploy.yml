@@ -1,4 +1,4 @@
-name: Deploy to Hosting via FTP
+name: Deploy to Hosting via Git-FTP (Optimized)
 
 # Trigger: chạy mỗi khi push code lên nhánh main
 on:
@@ -9,30 +9,21 @@ on:
 
 jobs:
   deploy:
-    name: Deploy files via FTP
+    name: Deploy changed files via Git-FTP
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
+      - name: Checkout code with history
         uses: actions/checkout@v4
-      
-      - name: Upload files via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
+          fetch-depth: 0  # Lấy toàn bộ git history để so sánh diff
+      
+      - name: Deploy via Git-FTP (only changed files)
+        uses: sebastianpopp/git-ftp-action@v3.3.0
+        with:
+          url: ftp://${{ secrets.FTP_SERVER }}/htdocs/
+          user: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          # Thư mục đích trên hosting (thường là htdocs, public_html, www, hoặc để trống)
-          server-dir: /htdocs/
-          # Các file/thư mục bỏ qua khi upload
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/tests/**
-            **/tools/**
-            **/.vscode/**
-            **/README.md
-            **/composer.json
-            **/docker-compose.yml
-            **/.github/**
+          # Git-FTP tự động phát hiện file thay đổi qua git diff
+          # Chỉ upload file đã thay đổi so với lần deploy trước
+          options: --insecure
