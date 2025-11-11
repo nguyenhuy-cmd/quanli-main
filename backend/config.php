@@ -4,16 +4,16 @@
 // - If deploying to a hosting provider (e.g. InfinityFree), replace the values
 //   with the credentials from your hosting control panel.
 // Local (XAMPP) defaults:
-// define('DB_HOST', '127.0.0.1');   // MySQL Hostname (local)
-// define('DB_NAME', 'if0_40315513_hrm_db');       // MySQL DB Name
-// define('DB_USER', 'root');              // MySQL Username (local)
-// define('DB_PASS', '');   // MySQL password (local XAMPP usually empty)
+define('DB_HOST', '127.0.0.1');   // MySQL Hostname (local)
+define('DB_NAME', 'hrm_db');       // MySQL DB Name
+define('DB_USER', 'root');              // MySQL Username (local)
+define('DB_PASS', '');   // MySQL password (local XAMPP usually empty)
 
 // Production / hosting example (commented) - replace with real values when used:
-define('DB_HOST', 'sql209.infinityfree.com');
-define('DB_NAME', 'if0_40315513_hrm_db');
-define('DB_USER', 'if0_40315513');
-define('DB_PASS', 'your_infintyfree_password');
+// define('DB_HOST', 'sql209.infinityfree.com');
+// define('DB_NAME', 'if0_40315513_hrm_db');
+// define('DB_USER', 'if0_40315513');
+// define('DB_PASS', 'your_infintyfree_password');
 
 function getPDO(){
     static $pdo = null;
