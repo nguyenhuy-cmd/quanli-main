@@ -1,29 +1,34 @@
-name: Deploy to Hosting via Git-FTP
+name: Deploy to Hosting via FTP
 
 on:
   push:
-    branches:
-      - main
-      - new
+    branches: [ main, new ]
   workflow_dispatch:
 
 jobs:
   deploy:
-    name: Deploy changed files via Git-FTP
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code with history
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # cần để git-ftp so sánh diff
+          fetch-depth: 0
 
-      - name: Deploy via Git-FTP (only changed files)
+      - name: FTP deploy
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
+          server: ${{ secrets.FTP_HOST }}         # ftpupload.net
+          username: ${{ secrets.FTP_USERNAME }}   # if0_xxx hoặc epiz_xxx
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /htdocs/
-          protocol: ftp
+          protocol: ftps
           port: 21
+          server-dir: /htdocs/                    # QUAN TRỌNG
+          local-dir: ./                           # gốc repo
+          exclude: |                              # không up đồ thừa
+            **/.git*
+            **/.github/**
+            **/node_modules/**
+            **/tests/**
+            **/tools/**
+          # Chỉ dùng lần ĐẦU nếu muốn xóa sạch remote trước khi sync:
+          # dangerous-clean-slate: true
