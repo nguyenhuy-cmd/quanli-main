@@ -22,7 +22,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
           port: 21
-          server-dir: /htdocs/                    # Deploy vào htdocs
+          server-dir: /                           # Deploy vào root
           local-dir: ./                           # gốc repo
           exclude: |
             .git/**
@@ -38,3 +38,7 @@ jobs:
             composer.lock
             docker-compose.yml
           log-level: verbose
+          
+      - name: Verify deployment
+        run: |
+          echo "Deployment completed. Please verify at https://huy12345.click/test-deploy.html"
