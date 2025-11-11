@@ -19,13 +19,11 @@ jobs:
           fetch-depth: 0  # cần để git-ftp so sánh diff
 
       - name: Deploy via Git-FTP (only changed files)
-        uses: sebastianpopp/git-ftp-action@v3.1.0
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          # Cách 1: dùng secret FTP_SERVER (đã tạo trong Settings > Secrets)
-          url: ftp://${{ secrets.FTP_SERVER }}/htdocs/
-          # Cách 2 (nếu chưa tạo FTP_SERVER): thay dòng trên bằng:
-          # url: ftp://ftpupload.net/htdocs/
-          user: ${{ secrets.FTP_USERNAME }}
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          # auto-init cho lần deploy đầu, insecure để bỏ kiểm tra cert FTPS (phù hợp InfinityFree)
-          options: --auto-init --insecure
+          server-dir: /htdocs/
+          protocol: ftp
+          port: 21
