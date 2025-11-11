@@ -4,17 +4,36 @@
  * PDO connection setup for MySQL
  */
 
+// Detect environment
+$isProduction = (strpos($_SERVER['HTTP_HOST'], 'infinityfreeapp.com') !== false || 
+                 strpos($_SERVER['HTTP_HOST'], '.rf.gd') !== false ||
+                 strpos($_SERVER['HTTP_HOST'], '.epizy.com') !== false);
+
 // Database credentials
-define('DB_HOST', 'localhost');       // Use localhost (will use pipe/socket)
-define('DB_NAME', 'hrm_system');      // Local database
-define('DB_USER', 'root');            // XAMPP default user
-define('DB_PASS', '');                // XAMPP default: no password
+if ($isProduction) {
+    // Production (InfinityFree)
+    define('DB_HOST', 'sql209.infinityfree.com');
+    define('DB_NAME', 'if0_40315513_hrm_db');
+    define('DB_USER', 'if0_40315513');
+    define('DB_PASS', 'Huy140923');
+} else {
+    // Development (XAMPP Local)
+    define('DB_HOST', 'localhost');
+    define('DB_NAME', 'hrm_system');
+    define('DB_USER', 'root');
+    define('DB_PASS', '');
+}
 define('DB_CHARSET', 'utf8mb4');
 
 // Application settings
 define('APP_NAME', 'HRM System');
-define('APP_URL', 'http://localhost/quanli-main');
-define('API_URL', APP_URL . '/backend/api.php');
+if ($isProduction) {
+    define('APP_URL', 'https://huy12345.click');  // ⚠️ THAY ĐỔI URL CỦA BẠN
+    define('API_URL', APP_URL . '/backend/api.php');
+} else {
+    define('APP_URL', 'http://localhost/quanli-main');
+    define('API_URL', APP_URL . '/backend/api.php');
+}
 
 // Security
 define('JWT_SECRET', 'your-secret-key-change-this-in-production');
@@ -33,11 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Error reporting
-// Check if running on production (InfinityFree or similar)
-$isProduction = (strpos($_SERVER['HTTP_HOST'], 'infinityfreeapp.com') !== false || 
-                 strpos($_SERVER['HTTP_HOST'], '.rf.gd') !== false ||
-                 strpos($_SERVER['HTTP_HOST'], '.epizy.com') !== false);
-
 if ($isProduction) {
     // Production: Log errors, don't display
     error_reporting(E_ALL);
