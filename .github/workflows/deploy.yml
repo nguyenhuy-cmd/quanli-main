@@ -30,5 +30,4 @@ jobs:
             **/node_modules/**
             **/tests/**
             **/tools/**
-          # Chỉ dùng lần ĐẦU nếu muốn xóa sạch remote trước khi sync:
-          # dangerous-clean-slate: true
+          dangerous-clean-slate: true           # Xóa sạch và upload lại toàn bộ
