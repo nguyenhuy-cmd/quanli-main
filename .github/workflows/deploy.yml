@@ -22,7 +22,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
           port: 21
-          server-dir: /htdocs/                    # QUAN TRỌNG
+          server-dir: /huy12345.click/            # Deploy vào folder domain
           local-dir: ./                           # gốc repo
           exclude: |                              # không up đồ thừa
             **/.git*
