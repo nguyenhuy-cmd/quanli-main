@@ -2,10 +2,7 @@
 // Example: if your app is at http://localhost/quanli-main/ this will point to
 // http://localhost/quanli-main/backend/api.php
 const BASE = (function(){
-  // Force localhost for development (change this when deploying to production)
-  return 'http://localhost/quanli-main/backend/api.php';
-  
-  /* Auto-detect (comment out the line above and uncomment this for production):
+  // Auto-detect for production (works on both localhost and hosting)
   try{
     const origin = window.location.origin; // protocol + host
     // derive the project root path from pathname (strip optional index.html and trailing slash)
@@ -13,10 +10,9 @@ const BASE = (function(){
     const root = pathname || '';
     return origin + root + '/backend/api.php';
   }catch(e){
-    // fallback to common local dev host
-    return 'http://127.0.0.1:8000/backend/api.php';
+    // fallback to localhost for development
+    return 'http://localhost/quanli-main/backend/api.php';
   }
-  */
 })();
 
 async function handleResponse(res){
