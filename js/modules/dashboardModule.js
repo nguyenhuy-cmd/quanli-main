@@ -119,7 +119,7 @@ class DashboardModule {
             // Load pending leaves
             const leaveResponse = await api.get('?resource=leaves');
             if (leaveResponse.success) {
-                const pending = leaveResponse.data.filter(l => l.status === 'pending');
+                const pending = leaveResponse.data.filter(l => l.leave_status === 'pending');
                 document.getElementById('pendingLeaves').textContent = pending.length || 0;
             }
 
