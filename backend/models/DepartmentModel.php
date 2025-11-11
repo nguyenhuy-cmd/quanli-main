@@ -1,28 +1,54 @@
 <?php
-require_once __DIR__ . '/BaseModel.php';
+/**
+ * Department Model
+ */
 
-class DepartmentModel extends BaseModel {
-    public function getAll(){
-        $stmt = $this->pdo->query("SELECT * FROM departments ORDER BY id");
-        return $stmt->fetchAll();
+require_once __DIR__ . '/Model.php';
+
+class DepartmentModel extends Model {
+    protected $table = 'departments';
+    
+    /**
+     * Get all departments with manager info and employee count
+     * @return array
+     */
+    public function getAllWithDetails() {
+        try {
+            $sql = "SELECT 
+                        d.*,
+                        e.full_name as manager_name,
+                        COUNT(emp.id) as employee_count
+                    FROM {$this->table} d
+                    LEFT JOIN employees e ON d.manager_id = e.id
+                    LEFT JOIN employees emp ON emp.department_id = d.id
+                    GROUP BY d.id
+                    ORDER BY d.id";
+            
+            return $this->query($sql);
+        } catch (Exception $e) {
+            throw new Exception("Error fetching departments: " . $e->getMessage());
+        }
     }
-    public function getById($id){
-        $stmt = $this->pdo->prepare('SELECT * FROM departments WHERE id=:id');
-        $stmt->execute([':id'=>$id]);
-        return $stmt->fetch();
-    }
-    public function create($data){
-        $stmt = $this->pdo->prepare('INSERT INTO departments (name) VALUES (:name)');
-        $stmt->execute([':name'=>$data['name']]);
-        return $this->getById($this->pdo->lastInsertId());
-    }
-    public function update($data){
-        $stmt = $this->pdo->prepare('UPDATE departments SET name=:name WHERE id=:id');
-        $stmt->execute([':name'=>$data['name'], ':id'=>$data['id']]);
-        return $this->getById($data['id']);
-    }
-    public function delete($id){
-        $stmt = $this->pdo->prepare('DELETE FROM departments WHERE id=:id');
-        return $stmt->execute([':id'=>$id]);
+
+    /**
+     * Get department statistics
+     * @return array
+     */
+    public function getStatistics() {
+        try {
+            $sql = "SELECT 
+                        d.id,
+                        d.name,
+                        COUNT(e.id) as employee_count,
+                        AVG(p.base_salary) as avg_salary
+                    FROM {$this->table} d
+                    LEFT JOIN employees e ON e.department_id = d.id AND e.status = 'active'
+                    LEFT JOIN positions p ON e.position_id = p.id
+                    GROUP BY d.id, d.name";
+            
+            return $this->query($sql);
+        } catch (Exception $e) {
+            throw new Exception("Error fetching statistics: " . $e->getMessage());
+        }
     }
 }

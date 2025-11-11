@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test Modules</title>
+</head>
+<body>
+    <h1>Test Module Loading</h1>
+    <div id="result"></div>
+
+    <script type="module">
+        import departmentModule from './js/modules/departmentModule.js';
+        import positionModule from './js/modules/positionModule.js';
+        
+        const result = document.getElementById('result');
+        
+        result.innerHTML = `
+            <h3>Module Test Results:</h3>
+            <ul>
+                <li>departmentModule: ${departmentModule ? '✅ Loaded' : '❌ Failed'}</li>
+                <li>departmentModule.render: ${typeof departmentModule?.render === 'function' ? '✅ Has render()' : '❌ No render()'}</li>
+                <li>positionModule: ${positionModule ? '✅ Loaded' : '❌ Failed'}</li>
+                <li>positionModule.render: ${typeof positionModule?.render === 'function' ? '✅ Has render()' : '❌ No render()'}</li>
+            </ul>
+        `;
+        
+        console.log('departmentModule:', departmentModule);
+        console.log('positionModule:', positionModule);
+    </script>
+</body>
+</html>

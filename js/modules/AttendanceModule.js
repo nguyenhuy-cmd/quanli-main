@@ -1,108 +1,193 @@
-import * as Api from '../api.js';
-import { el, showToast } from '../utils.js';
+/**
+ * Attendance Module
+ */
+import api from '../services/api.js';
+import ui from '../utils/ui.js';
+import modal from '../utils/modal.js';
 
-export async function renderAttendanceModule(container){
-  container.innerHTML = '';
-  container.appendChild(el('h3', {}, 'Chấm công'));
+class AttendanceModule {
+    constructor() {
+        this.attendances = [];
+    }
 
-  // Load employees for dropdown
-  let employees = [];
-  try {
-    employees = await Api.get('employees');
-  } catch(err) {
-    showToast('Không thể tải danh sách nhân viên', {type:'error'});
-  }
-
-  const employeeSelect = el('select', {name:'employee_id', required:true});
-  employeeSelect.appendChild(el('option', {value:'', disabled:true, selected:true}, '-- Chọn nhân viên --'));
-  employees.forEach(emp => {
-    employeeSelect.appendChild(el('option', {value:emp.id}, `${emp.name} (${emp.email || emp.id})`));
-  });
-
-  const form = el('form', {},
-    el('div', {class:'form-row'}, 
-      employeeSelect,
-      el('input', {name:'date', type:'date', required:true, value: new Date().toISOString().split('T')[0]})
-    ),
-    el('div', {class:'form-row'}, 
-      el('select', {name:'status', required:true}, 
-        el('option', {value:'present'}, 'Có mặt'),
-        el('option', {value:'absent'}, 'Vắng mặt'),
-        el('option', {value:'leave'}, 'Nghỉ phép')
-      )
-    ),
-    el('div', {}, el('button', {type:'submit', class:'btn'}, 'Thêm chấm công'))
-  );
-
-  const list = el('div');
-  container.appendChild(form);
-  container.appendChild(list);
-
-  async function load(){
-    try {
-      const data = await Api.get('attendance');
-      list.innerHTML = '';
-      if(!Array.isArray(data) || data.length===0){ 
-        list.appendChild(el('div', {style:'padding:20px;text-align:center;color:#666'}, 'Chưa có dữ liệu chấm công')); 
-        return; 
-      }
-      
-      // Create employee map for quick lookup
-      const empMap = {};
-      employees.forEach(e => empMap[e.id] = e);
-      
-      const table = el('table');
-      table.appendChild(el('thead', {}, 
-        el('tr', {}, 
-          el('th', {}, 'Nhân viên'),
-          el('th', {}, 'Ngày'),
-          el('th', {}, 'Trạng thái')
-        )
-      ));
-      const tbody = el('tbody');
-      
-      data.forEach(a=> {
-        const emp = empMap[a.employee_id];
-        const empName = emp ? emp.name : `NV #${a.employee_id}`;
-        const statusText = a.status === 'present' ? 'Có mặt' : 
-                          a.status === 'absent' ? 'Vắng mặt' : 
-                          a.status === 'leave' ? 'Nghỉ phép' : a.status;
-        const statusClass = a.status === 'present' ? 'badge-success' : 
-                           a.status === 'absent' ? 'badge-danger' : 'badge-warning';
+    async render() {
+        ui.setPageTitle('Chấm công');
+        const mainContent = document.getElementById('mainContent');
         
-        tbody.appendChild(el('tr', {}, 
-          el('td', {}, empName),
-          el('td', {}, a.date),
-          el('td', {}, el('span', {class:`badge ${statusClass}`}, statusText))
-        ));
-      });
-      
-      table.appendChild(tbody);
-      list.appendChild(table);
-    } catch(err) {
-      list.innerHTML = `<div style="color:red;padding:20px">Lỗi: ${err.message}</div>`;
-    }
-  }
+        const today = new Date().toISOString().split('T')[0];
+        
+        mainContent.innerHTML = `
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <h4>Chấm công ngày ${ui.formatDate(today)}</h4>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button class="btn btn-success" onclick="attendanceModule.checkIn()">
+                        <i class="bi bi-clock"></i> Check In
+                    </button>
+                    <button class="btn btn-warning" onclick="attendanceModule.checkOut()">
+                        <i class="bi bi-clock-history"></i> Check Out
+                    </button>
+                </div>
+            </div>
 
-  form.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const fd = new FormData(form);
-    const payload = {
-      employee_id: fd.get('employee_id'), 
-      date: fd.get('date'), 
-      status: fd.get('status')
-    };
-    try {
-      await Api.post('attendance', payload);
-      showToast('Thêm chấm công thành công', {type:'success'});
-      form.reset();
-      // Reset date to today
-      form.querySelector('[name="date"]').value = new Date().toISOString().split('T')[0];
-      await load();
-    } catch(err) {
-      showToast(err.message || 'Thêm chấm công thất bại', {type:'error'});
-    }
-  });
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label>Chọn ngày:</label>
+                        <input type="date" id="attendanceDate" class="form-control" style="max-width: 200px; display: inline-block; margin-left: 10px;" value="${today}" onchange="attendanceModule.loadAttendances()">
+                    </div>
+                    <div id="attendanceTableContainer">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
 
-  await load();
+        await this.loadAttendances();
+    }
+
+    async loadAttendances() {
+        try {
+            ui.showLoading();
+            const date = document.getElementById('attendanceDate')?.value || new Date().toISOString().split('T')[0];
+            const response = await api.get(`?resource=attendance&date=${date}`);
+            
+            if (response.success) {
+                this.attendances = response.data;
+                this.renderTable();
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('attendanceTableContainer').innerHTML = `
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-clock-history" style="font-size: 3rem;"></i>
+                    <p>Chưa có dữ liệu chấm công</p>
+                </div>
+            `;
+        } finally {
+            ui.hideLoading();
+        }
+    }
+
+    renderTable() {
+        const container = document.getElementById('attendanceTableContainer');
+        
+        if (this.attendances.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-clock-history" style="font-size: 3rem;"></i>
+                    <p>Chưa có ai chấm công hôm nay</p>
+                </div>
+            `;
+            return;
+        }
+
+        const headers = ['ID', 'Nhân viên', 'Ngày', 'Giờ vào', 'Giờ ra', 'Trạng thái', 'Ghi chú'];
+        const rows = this.attendances.map(att => {
+            let statusBadge = '';
+            if (att.attendance_status === 'present') statusBadge = '<span class="badge bg-success">Đúng giờ</span>';
+            else if (att.attendance_status === 'late') statusBadge = '<span class="badge bg-warning">Muộn</span>';
+            else if (att.attendance_status === 'absent') statusBadge = '<span class="badge bg-danger">Vắng</span>';
+            else statusBadge = '<span class="badge bg-secondary">Khác</span>';
+
+            return [
+                att.id,
+                att.employee_name || 'N/A',
+                ui.formatDate(att.attendance_date),
+                att.check_in_time || '-',
+                att.check_out_time || '-',
+                statusBadge,
+                att.notes || '-'
+            ];
+        });
+
+        container.innerHTML = ui.generateTable(headers, rows);
+    }
+
+    async checkIn() {
+        const empResponse = await api.get('?resource=employees');
+        
+        const fields = [
+            { 
+                name: 'employee_id', 
+                label: 'Nhân viên', 
+                type: 'select', 
+                required: true,
+                options: empResponse.success ? empResponse.data.map(e => ({ 
+                    value: e.id, 
+                    label: `${e.employee_code} - ${e.full_name}` 
+                })) : []
+            },
+            { name: 'date', label: 'Ngày', type: 'date', required: true, defaultValue: new Date().toISOString().split('T')[0] },
+            { name: 'check_in_time', label: 'Giờ vào', type: 'text', required: true, defaultValue: new Date().toTimeString().split(' ')[0].substring(0, 5), placeholder: 'HH:MM' },
+            { name: 'notes', label: 'Ghi chú', type: 'textarea', rows: 2 }
+        ];
+
+        modal.createFormModal('Check In', fields, async (formData) => {
+            try {
+                ui.showLoading();
+                const response = await api.post('?resource=attendance&action=checkin', formData);
+                
+                if (response.success) {
+                    ui.showToast('Check in thành công', 'success');
+                    await this.loadAttendances();
+                    return true;
+                }
+                ui.showToast(response.message || 'Check in thất bại', 'error');
+                return false;
+            } catch (error) {
+                ui.showToast('Lỗi: ' + error.message, 'error');
+                return false;
+            } finally {
+                ui.hideLoading();
+            }
+        });
+    }
+
+    async checkOut() {
+        const empResponse = await api.get('?resource=employees');
+        
+        const fields = [
+            { 
+                name: 'employee_id', 
+                label: 'Nhân viên', 
+                type: 'select', 
+                required: true,
+                options: empResponse.success ? empResponse.data.map(e => ({ 
+                    value: e.id, 
+                    label: `${e.employee_code} - ${e.full_name}` 
+                })) : []
+            },
+            { name: 'date', label: 'Ngày', type: 'date', required: true, defaultValue: new Date().toISOString().split('T')[0] },
+            { name: 'check_out_time', label: 'Giờ ra', type: 'text', required: true, defaultValue: new Date().toTimeString().split(' ')[0].substring(0, 5), placeholder: 'HH:MM' },
+            { name: 'notes', label: 'Ghi chú', type: 'textarea', rows: 2 }
+        ];
+
+        modal.createFormModal('Check Out', fields, async (formData) => {
+            try {
+                ui.showLoading();
+                const response = await api.post('?resource=attendance&action=checkout', formData);
+                
+                if (response.success) {
+                    ui.showToast('Check out thành công', 'success');
+                    await this.loadAttendances();
+                    return true;
+                }
+                ui.showToast(response.message || 'Check out thất bại', 'error');
+                return false;
+            } catch (error) {
+                ui.showToast('Lỗi: ' + error.message, 'error');
+                return false;
+            } finally {
+                ui.hideLoading();
+            }
+        });
+    }
 }
+
+const attendanceModule = new AttendanceModule();
+window.attendanceModule = attendanceModule;
+export default attendanceModule;

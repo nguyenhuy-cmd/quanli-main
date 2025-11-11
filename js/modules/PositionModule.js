@@ -1,87 +1,174 @@
-import * as Api from '../api.js';
-import { el, showConfirm, showToast } from '../utils.js';
+/**
+ * Position Module
+ * Manages positions/job titles
+ */
 
-export async function renderPositionModule(container){
-  container.innerHTML = '';
-  container.appendChild(el('h3', {}, 'Vị trí'));
-  const listWrap = el('div');
-  const form = el('form', {id:'pos-form'},
-    el('input', {name:'name', placeholder:'Tên vị trí'}),
-    el('button', {type:'submit', class:'btn'}, 'Lưu')
-  );
-  container.appendChild(form);
-  container.appendChild(listWrap);
+import api from '../services/api.js';
+import ui from '../utils/ui.js';
+import modal from '../utils/modal.js';
 
-  let editingId = null;
-
-  async function load(){
-    const items = await Api.get('positions');
-    listWrap.innerHTML = '';
-    const table = el('table');
-    const thead = el('thead', {}, el('tr', {}, el('th', {}, 'ID'), el('th', {}, 'Tên'), el('th', {}, 'Hành động')));
-    table.appendChild(thead);
-    const tbody = el('tbody');
-    table.appendChild(tbody);
-    items.forEach(it=>{
-      const tr = el('tr', {},
-        el('td', {}, it.id),
-        el('td', {}, it.name),
-        el('td', {},
-          el('button', {class:'btn', onclick:()=>{ onEdit(it); }}, 'Sửa'), ' ',
-          el('button', {class:'btn', onclick:()=>{ onDelete(it.id); }}, 'Xóa')
-        )
-      );
-      tbody.appendChild(tr);
-    });
-    listWrap.appendChild(table);
-  }
-
-  function onEdit(item){
-    editingId = item.id;
-    form.querySelector('[name="name"]').value = item.name;
-  }
-
-  async function onDelete(id){
-    const confirmed = await showConfirm('Bạn có chắc muốn xóa vị trí này không?', {
-      title: 'Xóa vị trí',
-      okText: 'Xóa',
-      cancelText: 'Hủy'
-    });
-    
-    if(!confirmed) return;
-    
-    try {
-      await Api.del('positions', {id});
-      showToast('Xóa vị trí thành công', {type:'success'});
-      await load();
-    } catch(err) {
-      showToast(err.message || 'Không thể xóa vị trí', {type:'error'});
+class PositionModule {
+    constructor() {
+        this.positions = [];
     }
-  }
 
-  form.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const name = form.querySelector('[name="name"]').value.trim();
-    if(!name){ 
-      showToast('Vui lòng nhập tên vị trí', {type:'error'}); 
-      return; 
-    }
-    
-    try {
-      if(editingId){
-        await Api.put('positions', {id:editingId, name});
-        showToast('Cập nhật vị trí thành công', {type:'success'});
-        editingId = null;
-      }else{
-        await Api.post('positions', {name});
-        showToast('Thêm vị trí thành công', {type:'success'});
-      }
-      form.reset();
-      await load();
-    } catch(err) {
-      showToast(err.message || 'Có lỗi xảy ra', {type:'error'});
-    }
-  });
+    async render() {
+        ui.setPageTitle('Quản lý Vị trí');
+        const mainContent = document.getElementById('mainContent');
+        
+        mainContent.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Danh sách Vị trí</h4>
+                <button class="btn btn-primary" onclick="positionModule.showAddModal()">
+                    <i class="bi bi-plus-circle"></i> Thêm vị trí
+                </button>
+            </div>
 
-  await load();
+            <div class="card">
+                <div class="card-body">
+                    <div id="positionTableContainer">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        await this.loadPositions();
+    }
+
+    async loadPositions() {
+        try {
+            ui.showLoading();
+            const response = await api.get('?resource=positions');
+            
+            if (response.success) {
+                this.positions = response.data;
+                this.renderTable();
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            ui.showToast('Lỗi khi tải dữ liệu', 'error');
+        } finally {
+            ui.hideLoading();
+        }
+    }
+
+    renderTable() {
+        const container = document.getElementById('positionTableContainer');
+        
+        if (this.positions.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-briefcase" style="font-size: 3rem;"></i>
+                    <p>Chưa có vị trí nào</p>
+                </div>
+            `;
+            return;
+        }
+
+        const headers = ['ID', 'Tên vị trí', 'Mức lương', 'Số nhân viên', 'Thao tác'];
+        const rows = this.positions.map(pos => [
+            pos.id,
+            pos.title,
+            ui.formatCurrency(pos.min_salary || 0) + ' - ' + ui.formatCurrency(pos.max_salary || 0),
+            `<span class="badge bg-info">${pos.employee_count || 0}</span>`,
+            `
+                <button class="btn btn-sm btn-warning" onclick="positionModule.showEditModal(${pos.id})">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="positionModule.deletePosition(${pos.id})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `
+        ]);
+
+        container.innerHTML = ui.generateTable(headers, rows);
+    }
+
+    showAddModal() {
+        const fields = [
+            { name: 'title', label: 'Tên vị trí', type: 'text', required: true, placeholder: 'VD: Lập trình viên Senior' },
+            { name: 'description', label: 'Mô tả công việc', type: 'textarea', rows: 3 },
+            { name: 'min_salary', label: 'Lương tối thiểu', type: 'number', required: true, placeholder: '10000000' },
+            { name: 'max_salary', label: 'Lương tối đa', type: 'number', required: true, placeholder: '20000000' }
+        ];
+
+        modal.createFormModal('Thêm vị trí mới', fields, async (formData) => {
+            try {
+                ui.showLoading();
+                const response = await api.post('?resource=positions', formData);
+                
+                if (response.success) {
+                    ui.showToast('Thêm vị trí thành công', 'success');
+                    await this.loadPositions();
+                    return true;
+                }
+                ui.showToast(response.message || 'Thêm thất bại', 'error');
+                return false;
+            } catch (error) {
+                ui.showToast('Lỗi: ' + error.message, 'error');
+                return false;
+            } finally {
+                ui.hideLoading();
+            }
+        });
+    }
+
+    async showEditModal(id) {
+        const pos = this.positions.find(p => p.id === id);
+        if (!pos) return;
+
+        const fields = [
+            { name: 'title', label: 'Tên vị trí', type: 'text', required: true },
+            { name: 'description', label: 'Mô tả công việc', type: 'textarea', rows: 3 },
+            { name: 'min_salary', label: 'Lương tối thiểu', type: 'number', required: true },
+            { name: 'max_salary', label: 'Lương tối đa', type: 'number', required: true }
+        ];
+
+        modal.createFormModal('Cập nhật vị trí', fields, async (formData) => {
+            try {
+                ui.showLoading();
+                const response = await api.put(`?resource=positions&id=${id}`, formData);
+                
+                if (response.success) {
+                    ui.showToast('Cập nhật vị trí thành công', 'success');
+                    await this.loadPositions();
+                    return true;
+                }
+                ui.showToast(response.message || 'Cập nhật thất bại', 'error');
+                return false;
+            } catch (error) {
+                ui.showToast('Lỗi: ' + error.message, 'error');
+                return false;
+            } finally {
+                ui.hideLoading();
+            }
+        }, pos);
+    }
+
+    async deletePosition(id) {
+        const confirmed = await modal.confirm('Bạn có chắc muốn xóa vị trí này?');
+        if (!confirmed) return;
+        
+        try {
+            ui.showLoading();
+            const response = await api.delete(`?resource=positions&id=${id}`);
+            if (response.success) {
+                ui.showToast('Xóa vị trí thành công', 'success');
+                await this.loadPositions();
+            } else {
+                ui.showToast(response.message || 'Xóa thất bại', 'error');
+            }
+        } catch (error) {
+            ui.showToast('Lỗi: ' + error.message, 'error');
+        } finally {
+            ui.hideLoading();
+        }
+    }
 }
+
+const positionModule = new PositionModule();
+window.positionModule = positionModule;
+export default positionModule;

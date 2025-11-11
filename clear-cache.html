@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Clear Cache & Reload</title>
+</head>
+<body>
+    <h1>🔄 Clear Cache Instructions</h1>
+    
+    <div style="padding: 20px; background: #f0f0f0; margin: 20px 0; border-radius: 10px;">
+        <h2>Cách 1: Hard Reload trong Chrome</h2>
+        <ol>
+            <li><strong>Nhấn F12</strong> để mở DevTools</li>
+            <li><strong>Click chuột phải</strong> vào nút Refresh (hoặc nhấn Ctrl+Shift+R)</li>
+            <li>Chọn <strong>"Empty Cache and Hard Reload"</strong></li>
+        </ol>
+    </div>
+
+    <div style="padding: 20px; background: #e3f2fd; margin: 20px 0; border-radius: 10px;">
+        <h2>Cách 2: Tự động xóa cache bằng JavaScript</h2>
+        <button onclick="clearAndReload()" style="padding: 15px 30px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            🗑️ Clear Cache & Reload
+        </button>
+    </div>
+
+    <div style="padding: 20px; background: #fff3cd; margin: 20px 0; border-radius: 10px;">
+        <h2>Hoặc mở lại ứng dụng với timestamp:</h2>
+        <a href="../?t=${Date.now()}" style="padding: 15px 30px; display: inline-block; background: #28a745; color: white; text-decoration: none; border-radius: 5px;">
+            ✅ Mở HRM System (No Cache)
+        </a>
+    </div>
+
+    <script>
+        function clearAndReload() {
+            // Clear localStorage
+            localStorage.clear();
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            
+            // Add timestamp to URL to bypass cache
+            window.location.href = '../?t=' + Date.now();
+        }
+    </script>
+</body>
+</html>

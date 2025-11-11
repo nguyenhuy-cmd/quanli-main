@@ -1,47 +1,102 @@
 <?php
+/**
+ * Salary Controller
+ */
+require_once __DIR__ . '/Controller.php';
 require_once __DIR__ . '/../models/SalaryModel.php';
-require_once __DIR__ . '/BaseController.php';
 
-class SalaryController extends BaseController {
+class SalaryController extends Controller {
     private $model;
-    public function __construct(){
+    
+    public function __construct() {
         $this->model = new SalaryModel();
     }
-    public function handle($method, $id=null, $body=null){
-        try{
-            switch($method){
-                case 'GET':
-                    $this->jsonSuccess($this->model->getAll());
-                    break;
-                case 'POST':
-                    $details = [];
-                    if(empty($body['employee_id'])) $details['employee_id'] = 'Mã nhân viên là bắt buộc';
-                    if(!isset($body['amount']) || !is_numeric($body['amount']) ) $details['amount'] = 'Số tiền là bắt buộc và phải là số';
-                    if(!empty($details)) $this->jsonError('Kiểm tra dữ liệu thất bại',400,$details);
-                    // verify employee exists to avoid foreign key errors
-                    $pdo = getPDO();
-                    $stmt = $pdo->prepare("SELECT id FROM employees WHERE id = :id LIMIT 1");
-                    $stmt->execute([':id' => $body['employee_id']]);
-                    $exists = $stmt->fetch();
-                    if(!$exists){
-                        $this->jsonError('Nhân viên không tồn tại', 400, ['employee_id'=>'Nhân viên không tồn tại']);
-                    }
-                    // normalize month -> pay_date if provided
-                    if(!empty($body['month']) && empty($body['pay_date'])){
-                        if(preg_match('/^\d{4}-\d{2}$/', $body['month'])){
-                            $body['pay_date'] = $body['month'] . '-01';
-                        }else{
-                            // leave as-is; model will handle null
-                        }
-                    }
-                    $created = $this->model->create($body);
-                    $this->jsonSuccess($created,201);
-                    break;
-                default:
-                    $this->jsonError('Chức năng chưa được triển khai',501);
-            }
-        }catch(Exception $e){
-            $this->jsonError($e->getMessage(),500);
+
+    public function handle() {
+        $method = $this->getMethod();
+        $id = $_GET['id'] ?? null;
+        $action = $_GET['action'] ?? '';
+        $this->requireAuth();
+        
+        if ($action === 'statistics') {
+            $this->getStatistics();
+            return;
+        }
+        
+        switch ($method) {
+            case 'GET':
+                $id ? $this->getOne($id) : $this->getAll();
+                break;
+            case 'POST':
+                $this->create();
+                break;
+            case 'PUT':
+                $id ? $this->update($id) : $this->sendError('ID required');
+                break;
+            case 'DELETE':
+                $id ? $this->delete($id) : $this->sendError('ID required');
+                break;
+        }
+    }
+
+    private function getAll() {
+        try {
+            $salaries = $this->model->getAllWithDetails();
+            $this->sendSuccess($salaries);
+        } catch (Exception $e) {
+            $this->sendError($e->getMessage(), 500);
+        }
+    }
+
+    private function getOne($id) {
+        try {
+            $salary = $this->model->getById($id);
+            if (!$salary) $this->sendError('Salary not found', 404);
+            $this->sendSuccess($salary);
+        } catch (Exception $e) {
+            $this->sendError($e->getMessage(), 500);
+        }
+    }
+
+    private function create() {
+        try {
+            $data = $this->getJsonInput();
+            $this->validateRequired($data, ['employee_id', 'base_salary', 'payment_date']);
+            $data = $this->sanitize($data);
+            $id = $this->model->create($data);
+            $this->sendSuccess($this->model->getById($id), 'Salary created');
+        } catch (Exception $e) {
+            $this->sendError($e->getMessage(), 500);
+        }
+    }
+
+    private function update($id) {
+        try {
+            $data = $this->getJsonInput();
+            if (!$this->model->getById($id)) $this->sendError('Salary not found', 404);
+            $this->model->update($id, $this->sanitize($data));
+            $this->sendSuccess($this->model->getById($id), 'Salary updated');
+        } catch (Exception $e) {
+            $this->sendError($e->getMessage(), 500);
+        }
+    }
+
+    private function delete($id) {
+        try {
+            if (!$this->model->getById($id)) $this->sendError('Salary not found', 404);
+            $this->model->delete($id);
+            $this->sendSuccess(null, 'Salary deleted');
+        } catch (Exception $e) {
+            $this->sendError($e->getMessage(), 500);
+        }
+    }
+
+    private function getStatistics() {
+        try {
+            $stats = $this->model->getStatistics();
+            $this->sendSuccess($stats);
+        } catch (Exception $e) {
+            $this->sendError($e->getMessage(), 500);
         }
     }
 }

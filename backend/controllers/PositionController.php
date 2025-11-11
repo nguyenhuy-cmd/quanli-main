@@ -1,45 +1,87 @@
 <?php
+/**
+ * Position Controller - Similar pattern to DepartmentController
+ */
+require_once __DIR__ . '/Controller.php';
 require_once __DIR__ . '/../models/PositionModel.php';
-require_once __DIR__ . '/BaseController.php';
 
-class PositionController extends BaseController {
+class PositionController extends Controller {
     private $model;
-    public function __construct(){
+    
+    public function __construct() {
         $this->model = new PositionModel();
     }
-    public function handle($method, $id=null, $body=null){
-        try{
-            switch($method){
-                case 'GET':
-                    if($id) $this->jsonSuccess($this->model->getById($id));
-                    $this->jsonSuccess($this->model->getAll());
-                    break;
-                case 'POST':
-                    $details = [];
-                    if(empty($body['name'])) $details['name'] = 'Tên là bắt buộc';
-                    if(!empty($details)) $this->jsonError('Kiểm tra dữ liệu thất bại',400,$details);
-                    $created = $this->model->create($body);
-                    $this->jsonSuccess($created,201);
-                    break;
-                case 'PUT':
-                    $details = [];
-                    if(empty($body['id'])) $details['id'] = 'ID là bắt buộc';
-                    if(empty($body['name'])) $details['name'] = 'Tên là bắt buộc';
-                    if(!empty($details)) $this->jsonError('Kiểm tra dữ liệu thất bại',400,$details);
-                    $updated = $this->model->update($body);
-                    $this->jsonSuccess($updated);
-                    break;
-                case 'DELETE':
-                    if(empty($body['id'])) $this->jsonError('Thiếu ID',400,['id'=>'ID là bắt buộc']);
-                    $ok = $this->model->delete($body['id']);
-                    $this->jsonSuccess(['success'=>!!$ok]);
-                    break;
-                default:
-                    $this->jsonError('Phương thức không được phép',405);
-            }
-        }catch(Exception $e){
-            @file_put_contents(__DIR__ . '/../logs/error.log', date('c') . " - PositionController error: " . $e->getMessage() . "\n", FILE_APPEND);
-            $this->jsonError('Lỗi hệ thống, vui lòng thử lại sau',500);
+
+    public function handle() {
+        $method = $this->getMethod();
+        $id = $_GET['id'] ?? null;
+        $this->requireAuth();
+        
+        switch ($method) {
+            case 'GET':
+                $id ? $this->getOne($id) : $this->getAll();
+                break;
+            case 'POST':
+                $this->create();
+                break;
+            case 'PUT':
+                $id ? $this->update($id) : $this->sendError('ID required');
+                break;
+            case 'DELETE':
+                $id ? $this->delete($id) : $this->sendError('ID required');
+                break;
+        }
+    }
+
+    private function getAll() {
+        try {
+            $positions = $this->model->getAllWithDetails();
+            $this->sendSuccess($positions);
+        } catch (Exception $e) {
+            $this->sendError($e->getMessage(), 500);
+        }
+    }
+
+    private function getOne($id) {
+        try {
+            $position = $this->model->getById($id);
+            if (!$position) $this->sendError('Position not found', 404);
+            $this->sendSuccess($position);
+        } catch (Exception $e) {
+            $this->sendError($e->getMessage(), 500);
+        }
+    }
+
+    private function create() {
+        try {
+            $data = $this->getJsonInput();
+            $this->validateRequired($data, ['title']);
+            $data = $this->sanitize($data);
+            $id = $this->model->create($data);
+            $this->sendSuccess($this->model->getById($id), 'Position created');
+        } catch (Exception $e) {
+            $this->sendError($e->getMessage(), 500);
+        }
+    }
+
+    private function update($id) {
+        try {
+            $data = $this->getJsonInput();
+            if (!$this->model->getById($id)) $this->sendError('Position not found', 404);
+            $this->model->update($id, $this->sanitize($data));
+            $this->sendSuccess($this->model->getById($id), 'Position updated');
+        } catch (Exception $e) {
+            $this->sendError($e->getMessage(), 500);
+        }
+    }
+
+    private function delete($id) {
+        try {
+            if (!$this->model->getById($id)) $this->sendError('Position not found', 404);
+            $this->model->delete($id);
+            $this->sendSuccess(null, 'Position deleted');
+        } catch (Exception $e) {
+            $this->sendError($e->getMessage(), 500);
         }
     }
 }

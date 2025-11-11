@@ -1,218 +1,203 @@
-import * as Api from '../api.js';
-import { el, setInlineError, clearInlineError, showToast, showConfirm } from '../utils.js';
+/**
+ * Leave Module
+ */
+import api from '../services/api.js';
+import ui from '../utils/ui.js';
+import modal from '../utils/modal.js';
 
-export async function renderLeaveModule(container){
-  container.innerHTML = '';
-  container.appendChild(el('h3', {}, 'Quản lý nghỉ phép'));
+class LeaveModule {
+    constructor() {
+        this.leaves = [];
+    }
 
-  // Load employees for dropdown
-  let employees = [];
-  try {
-    employees = await Api.get('employees');
-  } catch(err) {
-    showToast('Không thể tải danh sách nhân viên', {type:'error'});
-  }
-
-  const employeeSelect = el('select', {name:'employee_id', required:true});
-  employeeSelect.appendChild(el('option', {value:'', disabled:true, selected:true}, '-- Chọn nhân viên --'));
-  employees.forEach(emp => {
-    employeeSelect.appendChild(el('option', {value:emp.id}, `${emp.name} (${emp.email || emp.id})`));
-  });
-
-  const form = el('form', {},
-    el('div', {class:'form-row'}, 
-      employeeSelect
-    ),
-    el('div', {class:'form-row'}, 
-      el('div', {style:'flex:1'}, 
-        el('label', {style:'display:block;margin-bottom:4px;font-size:0.9em;color:#666'}, 'Ngày bắt đầu'),
-        el('input', {name:'start_date', type:'date', required:true})
-      ),
-      el('div', {style:'flex:1'}, 
-        el('label', {style:'display:block;margin-bottom:4px;font-size:0.9em;color:#666'}, 'Ngày kết thúc'),
-        el('input', {name:'end_date', type:'date', required:true})
-      )
-    ),
-    el('div', {class:'form-row'}, 
-      el('select', {name:'status', required:true}, 
-        el('option', {value:'pending'}, 'Chờ duyệt'),
-        el('option', {value:'approved'}, 'Đã duyệt'),
-        el('option', {value:'rejected'}, 'Từ chối')
-      )
-    ),
-    el('div', {}, el('button', {type:'submit', class:'btn'}, 'Tạo yêu cầu nghỉ phép'))
-  );
-
-  const list = el('div');
-  container.appendChild(form);
-  container.appendChild(list);
-
-  async function load(){
-    try {
-      const data = await Api.get('leaves');
-      list.innerHTML = '';
-      
-      if(!Array.isArray(data) || data.length===0){ 
-        list.appendChild(el('div', {style:'padding:20px;text-align:center;color:#666'}, 'Chưa có yêu cầu nghỉ phép nào')); 
-        return; 
-      }
-      
-      // Create employee map for quick lookup
-      const empMap = {};
-      employees.forEach(e => empMap[e.id] = e);
-      
-      const table = el('table');
-      table.appendChild(el('thead', {}, 
-        el('tr', {}, 
-          el('th', {}, 'Nhân viên'),
-          el('th', {}, 'Từ ngày'),
-          el('th', {}, 'Đến ngày'),
-          el('th', {}, 'Số ngày'),
-          el('th', {}, 'Trạng thái'),
-          el('th', {}, 'Thao tác')
-        )
-      ));
-      const tbody = el('tbody');
-      
-      data.forEach(l=> {
-        const emp = empMap[l.employee_id];
-        const empName = emp ? emp.name : `NV #${l.employee_id}`;
+    async render() {
+        ui.setPageTitle('Quản lý Nghỉ phép');
+        const mainContent = document.getElementById('mainContent');
         
-        // Calculate number of days
-        const startDate = new Date(l.start_date);
-        const endDate = new Date(l.end_date);
-        const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-        
-        // Status badge with color
-        let statusText = l.status;
-        let statusClass = 'badge-info';
-        
-        if(l.status === 'pending') {
-          statusText = 'Chờ duyệt';
-          statusClass = 'badge-warning';
-        } else if(l.status === 'approved') {
-          statusText = 'Đã duyệt';
-          statusClass = 'badge-success';
-        } else if(l.status === 'rejected') {
-          statusText = 'Từ chối';
-          statusClass = 'badge-danger';
-        }
-        
-        // Action buttons
-        const actions = el('div', {style:'display:flex;gap:4px'});
-        
-        if(l.status === 'pending') {
-          const approveBtn = el('button', {
-            class:'btn-small btn-success',
-            type:'button',
-            title:'Duyệt'
-          }, '✓');
-          approveBtn.addEventListener('click', async () => {
-            const confirmed = await showConfirm('Bạn có chắc muốn duyệt yêu cầu nghỉ phép này không?', {
-              title: 'Duyệt yêu cầu',
-              okText: 'Duyệt',
-              cancelText: 'Hủy'
-            });
+        mainContent.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Danh sách đơn nghỉ phép</h4>
+                <button class="btn btn-primary" onclick="leaveModule.showAddModal()">
+                    <i class="bi bi-plus-circle"></i> Tạo đơn nghỉ phép
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div id="leaveTableContainer">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        await this.loadLeaves();
+    }
+
+    async loadLeaves() {
+        try {
+            ui.showLoading();
+            const response = await api.get('?resource=leaves');
             
-            if(confirmed) {
-              try {
-                await Api.put(`leaves`, {id: l.id, status: 'approved'});
-                showToast('Đã duyệt yêu cầu', {type:'success'});
-                await load();
-              } catch(err) {
-                showToast(err.message || 'Không thể duyệt', {type:'error'});
-              }
+            if (response.success) {
+                this.leaves = response.data;
+                this.renderTable();
             }
-          });
-          
-          const rejectBtn = el('button', {
-            class:'btn-small btn-danger',
-            type:'button',
-            title:'Từ chối'
-          }, '✗');
-          rejectBtn.addEventListener('click', async () => {
-            const confirmed = await showConfirm('Bạn có chắc muốn từ chối yêu cầu nghỉ phép này không?', {
-              title: 'Từ chối yêu cầu',
-              okText: 'Từ chối',
-              cancelText: 'Hủy'
-            });
-            
-            if(confirmed) {
-              try {
-                await Api.put(`leaves`, {id: l.id, status: 'rejected'});
-                showToast('Đã từ chối yêu cầu', {type:'success'});
-                await load();
-              } catch(err) {
-                showToast(err.message || 'Không thể từ chối', {type:'error'});
-              }
-            }
-          });
-          
-          actions.appendChild(approveBtn);
-          actions.appendChild(rejectBtn);
-        } else {
-          actions.appendChild(el('span', {style:'color:#999;font-size:0.85em'}, '-'));
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('leaveTableContainer').innerHTML = `
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-calendar-x" style="font-size: 3rem;"></i>
+                    <p>Chưa có đơn nghỉ phép nào</p>
+                </div>
+            `;
+        } finally {
+            ui.hideLoading();
         }
+    }
+
+    renderTable() {
+        const container = document.getElementById('leaveTableContainer');
         
-        tbody.appendChild(el('tr', {}, 
-          el('td', {}, empName),
-          el('td', {}, new Date(l.start_date).toLocaleDateString('vi-VN')),
-          el('td', {}, new Date(l.end_date).toLocaleDateString('vi-VN')),
-          el('td', {style:'text-align:center'}, daysDiff + ' ngày'),
-          el('td', {}, el('span', {class:`badge ${statusClass}`}, statusText)),
-          el('td', {}, actions)
-        ));
-      });
-      
-      table.appendChild(tbody);
-      list.appendChild(table);
-    } catch(err) {
-      list.innerHTML = `<div style="color:red;padding:20px">Lỗi: ${err.message}</div>`;
-    }
-  }
+        if (this.leaves.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-calendar-x" style="font-size: 3rem;"></i>
+                    <p>Chưa có đơn nghỉ phép nào</p>
+                </div>
+            `;
+            return;
+        }
 
-  form.addEventListener('submit', async e=>{
-    e.preventDefault();
-    
-    // Clear inline errors
-    ['employee_id','start_date','end_date'].forEach(n=>{ 
-      const eln = form.querySelector('[name="'+n+'"]'); 
-      if(eln) clearInlineError(eln); 
-    });
-    
-    const fd = new FormData(form);
-    const startDate = fd.get('start_date');
-    const endDate = fd.get('end_date');
-    
-    // Validate dates
-    if(startDate && endDate && new Date(endDate) < new Date(startDate)) {
-      setInlineError(form.querySelector('[name="end_date"]'), 'Ngày kết thúc phải sau ngày bắt đầu');
-      showToast('Ngày kết thúc phải sau ngày bắt đầu', {type:'error'});
-      return;
-    }
-    
-    const payload = {
-      employee_id: fd.get('employee_id'), 
-      start_date: startDate, 
-      end_date: endDate, 
-      status: fd.get('status')
-    };
-    
-    try{
-      await Api.post('leaves', payload);
-      showToast('Tạo yêu cầu nghỉ phép thành công', {type:'success'});
-      form.reset();
-      await load();
-    }catch(err){
-      if(err && err.body && err.body.details){ 
-        Object.entries(err.body.details).forEach(([f,m])=>{ 
-          const eln = form.querySelector('[name="'+f+'"]'); 
-          if(eln) setInlineError(eln,m); 
-        }); 
-      }
-      showToast(err.message || 'Không thể tạo yêu cầu nghỉ', {type:'error'});
-    }
-  });
+        const headers = ['ID', 'Nhân viên', 'Loại nghỉ phép', 'Từ ngày', 'Đến ngày', 'Số ngày', 'Trạng thái', 'Thao tác'];
+        const rows = this.leaves.map(leave => {
+            let statusBadge = '';
+            if (leave.leave_status === 'approved') statusBadge = '<span class="badge bg-success">Đã duyệt</span>';
+            else if (leave.leave_status === 'pending') statusBadge = '<span class="badge bg-warning">Chờ duyệt</span>';
+            else if (leave.leave_status === 'rejected') statusBadge = '<span class="badge bg-danger">Từ chối</span>';
+            else statusBadge = '<span class="badge bg-secondary">Khác</span>';
 
-  await load();
+            return [
+                leave.id,
+                leave.full_name || 'N/A',
+                leave.leave_type || 'N/A',
+                ui.formatDate(leave.start_date),
+                ui.formatDate(leave.end_date),
+                leave.total_days || '-',
+                statusBadge,
+                `
+                    <button class="btn btn-sm btn-success" onclick="leaveModule.approve(${leave.id})" ${leave.leave_status !== 'pending' ? 'disabled' : ''}>
+                        <i class="bi bi-check"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="leaveModule.reject(${leave.id})" ${leave.leave_status !== 'pending' ? 'disabled' : ''}>
+                        <i class="bi bi-x"></i>
+                    </button>
+                `
+            ];
+        });
+
+        container.innerHTML = ui.generateTable(headers, rows);
+    }
+
+    async showAddModal() {
+        const empResponse = await api.get('?resource=employees');
+        
+        const fields = [
+            { 
+                name: 'employee_id', 
+                label: 'Nhân viên', 
+                type: 'select', 
+                required: true,
+                options: empResponse.success ? empResponse.data.map(e => ({ 
+                    value: e.id, 
+                    label: `${e.employee_code} - ${e.full_name}` 
+                })) : []
+            },
+            { 
+                name: 'leave_type', 
+                label: 'Loại nghỉ phép', 
+                type: 'select', 
+                required: true,
+                options: [
+                    { value: 'annual', label: 'Nghỉ phép năm' },
+                    { value: 'sick', label: 'Nghỉ ốm' },
+                    { value: 'unpaid', label: 'Nghỉ không lương' },
+                    { value: 'maternity', label: 'Nghỉ thai sản' },
+                    { value: 'other', label: 'Khác' }
+                ]
+            },
+            { name: 'start_date', label: 'Từ ngày', type: 'date', required: true },
+            { name: 'end_date', label: 'Đến ngày', type: 'date', required: true },
+            { name: 'total_days', label: 'Số ngày', type: 'number', required: true, placeholder: '1' },
+            { name: 'reason', label: 'Lý do', type: 'textarea', required: true, rows: 3 }
+        ];
+
+        modal.createFormModal('Tạo đơn nghỉ phép', fields, async (formData) => {
+            try {
+                ui.showLoading();
+                const response = await api.post('?resource=leaves', formData);
+                
+                if (response.success) {
+                    ui.showToast('Tạo đơn nghỉ phép thành công', 'success');
+                    await this.loadLeaves();
+                    return true;
+                }
+                ui.showToast(response.message || 'Tạo đơn thất bại', 'error');
+                return false;
+            } catch (error) {
+                ui.showToast('Lỗi: ' + error.message, 'error');
+                return false;
+            } finally {
+                ui.hideLoading();
+            }
+        });
+    }
+
+    async approve(id) {
+        const confirmed = await modal.confirm('Bạn có chắc muốn duyệt đơn nghỉ phép này?', 'Xác nhận duyệt');
+        if (!confirmed) return;
+
+        try {
+            ui.showLoading();
+            const response = await api.put(`?resource=leaves&id=${id}&action=approve`, {});
+            
+            if (response.success) {
+                ui.showToast('Duyệt đơn thành công', 'success');
+                await this.loadLeaves();
+            } else {
+                ui.showToast(response.message || 'Duyệt đơn thất bại', 'error');
+            }
+        } catch (error) {
+            ui.showToast('Lỗi: ' + error.message, 'error');
+        } finally {
+            ui.hideLoading();
+        }
+    }
+
+    async reject(id) {
+        const confirmed = await modal.confirm('Bạn có chắc muốn từ chối đơn nghỉ phép này?', 'Xác nhận từ chối');
+        if (!confirmed) return;
+
+        try {
+            ui.showLoading();
+            const response = await api.put(`?resource=leaves&id=${id}&action=reject`, {});
+            
+            if (response.success) {
+                ui.showToast('Từ chối đơn thành công', 'success');
+                await this.loadLeaves();
+            } else {
+                ui.showToast(response.message || 'Từ chối đơn thất bại', 'error');
+            }
+        } catch (error) {
+            ui.showToast('Lỗi: ' + error.message, 'error');
+        } finally {
+            ui.hideLoading();
+        }
+    }
 }
+
+const leaveModule = new LeaveModule();
+window.leaveModule = leaveModule;
+export default leaveModule;

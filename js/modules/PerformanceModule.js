@@ -1,106 +1,248 @@
-import * as Api from '../api.js';
-import { el, showToast } from '../utils.js';
+/**
+ * Performance Module
+ */
+import api from '../services/api.js';
+import ui from '../utils/ui.js';
+import modal from '../utils/modal.js';
 
-export async function renderPerformanceModule(container){
-  container.innerHTML = '';
-  container.appendChild(el('h3', {}, 'Đánh giá hiệu suất'));
+class PerformanceModule {
+    constructor() {
+        this.performances = [];
+    }
 
-  // Load employees for dropdown
-  let employees = [];
-  try {
-    employees = await Api.get('employees');
-  } catch(err) {
-    showToast('Không thể tải danh sách nhân viên', {type:'error'});
-  }
+    async render() {
+        ui.setPageTitle('Đánh giá Hiệu suất');
+        const mainContent = document.getElementById('mainContent');
+        
+        mainContent.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Bảng đánh giá hiệu suất</h4>
+                <button class="btn btn-primary" onclick="performanceModule.showAddModal()">
+                    <i class="bi bi-plus-circle"></i> Thêm đánh giá
+                </button>
+            </div>
 
-  const employeeSelect = el('select', {name:'employee_id', required:true});
-  employeeSelect.appendChild(el('option', {value:'', disabled:true, selected:true}, '-- Chọn nhân viên --'));
-  employees.forEach(emp => {
-    employeeSelect.appendChild(el('option', {value:emp.id}, `${emp.name} (${emp.email || emp.id})`));
-  });
+            <div class="card">
+                <div class="card-body">
+                    <div id="performanceTableContainer">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
 
-  const form = el('form', {},
-    el('div', {class:'form-row'}, 
-      employeeSelect,
-      el('input', {name:'score', placeholder:'Điểm (0-100)', type:'number', min:0, max:100, required:true})
-    ),
-    el('div', {}, 
-      el('textarea', {name:'note', placeholder:'Ghi chú đánh giá...', rows:4, style:'width:100%;padding:8px;border:1px solid #ddd;border-radius:4px'})
-    ),
-    el('div', {}, el('button', {type:'submit', class:'btn'}, 'Thêm đánh giá'))
-  );
+        await this.loadPerformances();
+    }
 
-  const list = el('div');
-  container.appendChild(form);
-  container.appendChild(list);
+    async loadPerformances() {
+        try {
+            ui.showLoading();
+            const response = await api.get('?resource=performance');
+            
+            if (response.success) {
+                this.performances = response.data;
+                this.renderTable();
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('performanceTableContainer').innerHTML = `
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-star" style="font-size: 3rem;"></i>
+                    <p>Chưa có đánh giá hiệu suất nào</p>
+                </div>
+            `;
+        } finally {
+            ui.hideLoading();
+        }
+    }
 
-  async function load(){
-    try {
-      const data = await Api.get('reviews');
-      list.innerHTML = '';
-      
-      // Create employee map for quick lookup
-      const empMap = {};
-      employees.forEach(e => empMap[e.id] = e);
-      
-      const table = el('table');
-      table.appendChild(el('thead', {}, 
-        el('tr', {}, 
-          el('th', {}, 'Nhân viên'),
-          el('th', {}, 'Điểm'),
-          el('th', {}, 'Ghi chú'),
-          el('th', {}, 'Ngày đánh giá')
-        )
-      ));
-      const tbody = el('tbody');
-      
-      if(!Array.isArray(data) || data.length===0){
-        tbody.appendChild(el('tr', {}, 
-          el('td', {colspan:4, style:'text-align:center;padding:20px;color:#666'}, 'Chưa có dữ liệu đánh giá')
-        ));
-      } else {
-        data.forEach(r=> {
-          const emp = empMap[r.employee_id];
-          const empName = emp ? emp.name : `NV #${r.employee_id}`;
-          
-          // Score badge with color
-          const scoreClass = r.score >= 80 ? 'badge-success' : 
-                           r.score >= 60 ? 'badge-warning' : 'badge-danger';
-          
-          tbody.appendChild(el('tr', {}, 
-            el('td', {}, empName),
-            el('td', {}, el('span', {class:`badge ${scoreClass}`, style:'font-size:14px;padding:4px 8px'}, r.score + '/100')),
-            el('td', {}, r.note || '-'),
-            el('td', {}, r.created_at ? new Date(r.created_at).toLocaleDateString('vi-VN') : '-')
-          ));
+    renderTable() {
+        const container = document.getElementById('performanceTableContainer');
+        
+        if (this.performances.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-star" style="font-size: 3rem;"></i>
+                    <p>Chưa có đánh giá hiệu suất nào</p>
+                </div>
+            `;
+            return;
+        }
+
+        const headers = ['ID', 'Nhân viên', 'Kỳ đánh giá', 'Điểm', 'Xếp loại', 'Người đánh giá', 'Ngày đánh giá', 'Thao tác'];
+        const rows = this.performances.map(perf => {
+            let ratingBadge = '';
+            const score = parseFloat(perf.rating || 0);
+            if (score >= 9) ratingBadge = '<span class="badge bg-success">Xuất sắc</span>';
+            else if (score >= 8) ratingBadge = '<span class="badge bg-primary">Giỏi</span>';
+            else if (score >= 7) ratingBadge = '<span class="badge bg-info">Khá</span>';
+            else if (score >= 5) ratingBadge = '<span class="badge bg-warning">Trung bình</span>';
+            else ratingBadge = '<span class="badge bg-danger">Yếu</span>';
+
+            return [
+                perf.id,
+                perf.employee_name || 'N/A',
+                perf.review_period || 'N/A',
+                `<strong>${score.toFixed(1)}/10</strong>`,
+                ratingBadge,
+                perf.reviewer_name || 'N/A',
+                ui.formatDate(perf.review_date),
+                `
+                    <button class="btn btn-sm btn-info" onclick="performanceModule.viewDetail(${perf.id})">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-warning" onclick="performanceModule.showEditModal(${perf.id})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                `
+            ];
         });
-      }
-      
-      table.appendChild(tbody);
-      list.appendChild(table);
-    } catch(err) {
-      list.innerHTML = `<div style="color:red;padding:20px">Lỗi: ${err.message}</div>`;
-    }
-  }
 
-  form.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const fd = new FormData(form);
-    const payload = {
-      employee_id: fd.get('employee_id'), 
-      score: fd.get('score'), 
-      note: fd.get('note')
-    };
-    
-    try {
-      await Api.post('reviews', payload);
-      showToast('Thêm đánh giá thành công', {type:'success'});
-      form.reset();
-      await load();
-    } catch(err) {
-      showToast(err.message || 'Thêm đánh giá thất bại', {type:'error'});
+        container.innerHTML = ui.generateTable(headers, rows);
     }
-  });
 
-  await load();
+    async showAddModal() {
+        const empResponse = await api.get('?resource=employees');
+        
+        const fields = [
+            { 
+                name: 'employee_id', 
+                label: 'Nhân viên', 
+                type: 'select', 
+                required: true,
+                options: empResponse.success ? empResponse.data.map(e => ({ 
+                    value: e.id, 
+                    label: `${e.employee_code} - ${e.full_name}` 
+                })) : []
+            },
+            { 
+                name: 'reviewer_id', 
+                label: 'Người đánh giá (ID)', 
+                type: 'number', 
+                required: true,
+                placeholder: '1'
+            },
+            { name: 'review_period_start', label: 'Từ ngày', type: 'date', required: true },
+            { name: 'review_period_end', label: 'Đến ngày', type: 'date', required: true },
+            { name: 'rating', label: 'Điểm tổng (0-5)', type: 'number', required: true, placeholder: '4.5' },
+            { name: 'technical_skills', label: 'Kỹ năng chuyên môn (0-5)', type: 'number', placeholder: '4.0' },
+            { name: 'communication_skills', label: 'Kỹ năng giao tiếp (0-5)', type: 'number', placeholder: '4.0' },
+            { name: 'teamwork', label: 'Làm việc nhóm (0-5)', type: 'number', placeholder: '4.0' },
+            { name: 'productivity', label: 'Năng suất (0-5)', type: 'number', placeholder: '4.0' },
+            { name: 'strengths', label: 'Điểm mạnh', type: 'textarea', rows: 3 },
+            { name: 'weaknesses', label: 'Điểm cần cải thiện', type: 'textarea', rows: 3 },
+            { name: 'recommendations', label: 'Đề xuất', type: 'textarea', rows: 3 },
+            { 
+                name: 'review_status', 
+                label: 'Trạng thái', 
+                type: 'select', 
+                required: true,
+                options: [
+                    { value: 'draft', label: 'Nháp' },
+                    { value: 'completed', label: 'Hoàn thành' },
+                    { value: 'acknowledged', label: 'Đã xác nhận' }
+                ]
+            }
+        ];
+
+        modal.createFormModal('Thêm đánh giá hiệu suất', fields, async (formData) => {
+            try {
+                ui.showLoading();
+                const response = await api.post('?resource=performance', formData);
+                
+                if (response.success) {
+                    ui.showToast('Thêm đánh giá thành công', 'success');
+                    await this.loadPerformances();
+                    return true;
+                }
+                ui.showToast(response.message || 'Thêm thất bại', 'error');
+                return false;
+            } catch (error) {
+                ui.showToast('Lỗi: ' + error.message, 'error');
+                return false;
+            } finally {
+                ui.hideLoading();
+            }
+        });
+    }
+
+    async showEditModal(id) {
+        const perf = this.performances.find(p => p.id === id);
+        if (!perf) return;
+
+        const empResponse = await api.get('?resource=employees');
+        
+        const fields = [
+            { 
+                name: 'employee_id', 
+                label: 'Nhân viên', 
+                type: 'select', 
+                required: true,
+                options: empResponse.success ? empResponse.data.map(e => ({ 
+                    value: e.id, 
+                    label: `${e.employee_code} - ${e.full_name}` 
+                })) : []
+            },
+            { 
+                name: 'reviewer_id', 
+                label: 'Người đánh giá (ID)', 
+                type: 'number', 
+                required: true
+            },
+            { name: 'review_period_start', label: 'Từ ngày', type: 'date', required: true },
+            { name: 'review_period_end', label: 'Đến ngày', type: 'date', required: true },
+            { name: 'rating', label: 'Điểm tổng (0-5)', type: 'number', required: true },
+            { name: 'technical_skills', label: 'Kỹ năng chuyên môn (0-5)', type: 'number' },
+            { name: 'communication_skills', label: 'Kỹ năng giao tiếp (0-5)', type: 'number' },
+            { name: 'teamwork', label: 'Làm việc nhóm (0-5)', type: 'number' },
+            { name: 'productivity', label: 'Năng suất (0-5)', type: 'number' },
+            { name: 'strengths', label: 'Điểm mạnh', type: 'textarea', rows: 3 },
+            { name: 'weaknesses', label: 'Điểm cần cải thiện', type: 'textarea', rows: 3 },
+            { name: 'recommendations', label: 'Đề xuất', type: 'textarea', rows: 3 },
+            { 
+                name: 'review_status', 
+                label: 'Trạng thái', 
+                type: 'select', 
+                required: true,
+                options: [
+                    { value: 'draft', label: 'Nháp' },
+                    { value: 'completed', label: 'Hoàn thành' },
+                    { value: 'acknowledged', label: 'Đã xác nhận' }
+                ]
+            }
+        ];
+
+        modal.createFormModal('Cập nhật đánh giá', fields, async (formData) => {
+            try {
+                ui.showLoading();
+                const response = await api.put(`?resource=performance&id=${id}`, formData);
+                
+                if (response.success) {
+                    ui.showToast('Cập nhật đánh giá thành công', 'success');
+                    await this.loadPerformances();
+                    return true;
+                }
+                ui.showToast(response.message || 'Cập nhật thất bại', 'error');
+                return false;
+            } catch (error) {
+                ui.showToast('Lỗi: ' + error.message, 'error');
+                return false;
+            } finally {
+                ui.hideLoading();
+            }
+        }, perf);
+    }
+
+    viewDetail(id) {
+        const perf = this.performances.find(p => p.id === id);
+        if (perf) {
+            alert(`Chi tiết đánh giá:\n\nNhân viên: ${perf.employee_name}\nKỳ đánh giá: ${perf.review_period}\nĐiểm: ${perf.rating}/10\nNhận xét: ${perf.comments || 'Không có'}`);
+        }
+    }
 }
+
+const performanceModule = new PerformanceModule();
+window.performanceModule = performanceModule;
+export default performanceModule;

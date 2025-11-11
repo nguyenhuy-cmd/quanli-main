@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Deploy - SUCCESS!</title>
+    <title>Test Deployment - HRM System</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,50 +14,105 @@
             color: white;
         }
         .container {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             padding: 30px;
             border-radius: 10px;
             backdrop-filter: blur(10px);
         }
-        h1 { color: #4ade80; margin: 0 0 20px 0; }
-        .success { background: rgba(74, 222, 128, 0.2); padding: 15px; border-radius: 5px; margin: 20px 0; }
-        a {
-            display: inline-block;
-            background: #4ade80;
-            color: #000;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            margin-top: 20px;
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
         }
-        a:hover { background: #22c55e; }
-        .info { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .status {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .success {
+            background: rgba(0, 255, 0, 0.2);
+            border: 2px solid #00ff00;
+        }
+        .info {
+            margin: 10px 0;
+        }
+        a {
+            color: #ffd700;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            margin: 10px 5px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>✅ DEPLOY THÀNH CÔNG!</h1>
+        <h1>🚀 HRM System - Test Deployment</h1>
         
-        <div class="success">
-            <p><strong>Chúc mừng!</strong> File đã được upload lên hosting thành công.</p>
-            <p>Deploy time: <span id="time"></span></p>
+        <div class="status success">
+            <h2>✅ Deployment Successful!</h2>
+            <p>GitHub Actions đã deploy code thành công lên hosting.</p>
         </div>
-        
-        <div class="info">
-            <p><strong>Website:</strong> huy12345.click</p>
-            <p><strong>Hosting:</strong> InfinityFree</p>
-            <p><strong>Deploy method:</strong> GitHub Actions → FTP</p>
+
+        <div class="status">
+            <h3>📋 Thông tin hệ thống:</h3>
+            <div class="info">
+                <strong>PHP Version:</strong> <?php echo phpversion(); ?>
+            </div>
+            <div class="info">
+                <strong>Server:</strong> <?php echo $_SERVER['SERVER_SOFTWARE']; ?>
+            </div>
+            <div class="info">
+                <strong>Document Root:</strong> <?php echo $_SERVER['DOCUMENT_ROOT']; ?>
+            </div>
+            <div class="info">
+                <strong>Deploy Time:</strong> <?php echo date('Y-m-d H:i:s'); ?>
+            </div>
         </div>
-        
-        <hr style="border-color: rgba(255,255,255,0.3); margin: 30px 0;">
-        
-        <a href="/">🏠 Đi tới trang chủ</a>
-        <a href="/index.html">📱 Mở ứng dụng</a>
+
+        <div class="status">
+            <h3>🔗 Links:</h3>
+            <div>
+                <a href="/" class="btn">🏠 Trang chủ</a>
+                <a href="/backend/api.php?resource=auth&action=test" class="btn">🔌 Test API</a>
+                <a href="https://github.com/nguyenhuy-cmd/quanli-main" class="btn">📦 GitHub Repo</a>
+            </div>
+        </div>
+
+        <div class="status">
+            <h3>✨ Tính năng đã triển khai:</h3>
+            <ul>
+                <li>✅ Frontend: Vanilla JavaScript + Bootstrap 5</li>
+                <li>✅ Backend: PHP OOP + MVC</li>
+                <li>✅ Database: MySQL</li>
+                <li>✅ Authentication: JWT-based</li>
+                <li>✅ RESTful API</li>
+                <li>✅ CI/CD: GitHub Actions + FTP Deploy</li>
+                <li>✅ 8+ Modules: Employees, Departments, Attendance, Leaves, etc.</li>
+            </ul>
+        </div>
+
+        <div class="status">
+            <p style="text-align: center; margin-top: 30px;">
+                <strong>Made with ❤️ by Nguyễn Huy</strong>
+            </p>
+        </div>
     </div>
-    
-    <script>
-        document.getElementById('time').textContent = new Date().toLocaleString('vi-VN');
-    </script>
 </body>
 </html>

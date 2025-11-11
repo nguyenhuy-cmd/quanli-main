@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+vendor/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build files
+dist/
+build/
+
+# Database
+*.sql.gz
+*.sqlite
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Cache
+cache/
+*.cache
+
+# Backup files
+*.bak
+*.backup

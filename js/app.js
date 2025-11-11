@@ -1,233 +1,197 @@
-import * as Api from './api.js';
-import { renderEmployeeModule } from './modules/EmployeeDbModule.js';
-import { renderAuthModule } from './modules/AuthModule.js';
-import { renderDepartmentModule } from './modules/DepartmentModule.js';
-import { renderPositionModule } from './modules/PositionModule.js';
-import { renderAttendanceModule } from './modules/AttendanceModule.js';
-import { renderSalaryModule } from './modules/SalaryModule.js';
-import { renderLeaveModule } from './modules/LeaveModule.js';
-import { renderPerformanceModule } from './modules/PerformanceModule.js';
-import { showToast } from './utils.js';
+/**
+ * Main Application
+ * Initializes and manages the HRM application
+ */
 
-const menu = document.querySelector('.sidebar');
-const content = document.getElementById('app-content');
-const userPanel = document.getElementById('user-panel');
+import auth from './modules/AuthModule.js?v=7';
+import dashboard from './modules/dashboardModule.js?v=7';
+import employeeModule from './modules/employeeModule.js?v=7';
+import departmentModule from './modules/departmentModule.js?v=7';
+import positionModule from './modules/positionModule.js?v=7';
+import salaryModule from './modules/salaryModule.js?v=7';
+import attendanceModule from './modules/attendanceModule.js?v=7';
+import leaveModule from './modules/leaveModule.js?v=7';
+import performanceModule from './modules/performanceModule.js?v=7';
+import ui from './utils/ui.js?v=7';
+import modal from './utils/modal.js?v=3';
 
-window.updateUserPanel = function(){
-  const user = JSON.parse(localStorage.getItem('hrm_user')||'null');
-  userPanel.innerHTML = '';
-  if(user){
-    const avatar = document.createElement('span');
-    avatar.className = 'avatar';
-    // show first letter of email/name
-    const nameHint = (user.name || user.email || '').trim();
-    avatar.textContent = (nameHint && nameHint[0])? nameHint[0].toUpperCase() : 'U';
-    const span = document.createElement('span');
-    span.textContent = user.email;
-    const btn = document.createElement('button');
-    btn.textContent = 'Đăng xuất';
-    btn.className = 'btn';
-    btn.addEventListener('click', async ()=>{
-      try{
-        // try server-side logout, ignore errors
-        await Api.post('auth/logout', {});
-      }catch(e){
-        // ignore
-      }
-      localStorage.removeItem('hrm_user'); localStorage.removeItem('hrm_token'); window.updateUserPanel(); routeTo('auth');
-    });
-  userPanel.appendChild(avatar);
-  userPanel.appendChild(span);
-  userPanel.appendChild(btn);
-    // show menu when logged in
-    if(menu) menu.style.display = '';
-  }else{
-    const a = document.createElement('a');
-    a.textContent = 'Đăng nhập';
-    a.href = '#';
-    a.addEventListener('click', e=>{ e.preventDefault(); if(window.routeTo) window.routeTo('auth'); });
-    userPanel.appendChild(a);
-    // hide menu when not logged in
-    if(menu) menu.style.display = 'none';
-  }
-}
-window.updateUserPanel();
-
-function setActiveItem(el){
-  menu.querySelectorAll('li').forEach(li=>li.classList.remove('active'));
-  el.classList.add('active');
-}
-
-menu.addEventListener('click', e=>{
-  const li = e.target.closest('li');
-  if(!li) return;
-  // If clicked an <a href="#/..."> allow default hash navigation
-  const a = e.target.closest('a');
-  if(a && a.getAttribute('href') && a.getAttribute('href').startsWith('#')){
-    // allow the hashchange handler to route; but prevent further handling here
-    return;
-  }
-  // require authentication before navigating to modules other than auth
-  const token = localStorage.getItem('hrm_token');
-  const module = li.dataset.module;
-  if(!token && module !== 'auth'){
-    showToast('Vui lòng đăng nhập trước khi truy cập menu', {type:'error'});
-    // force show auth screen
-    if(window.routeTo) window.routeTo('auth');
-    // update hash to auth
-    location.hash = '#/auth';
-    return;
-  }
-  // navigate by setting hash (this triggers hashchange -> routeTo)
-  location.hash = '#/' + module;
-});
-
-function parseHash(){
-  const h = location.hash || '';
-  if(!h) return null;
-  // accept formats: #/module or #module
-  return h.replace(/^#\/?/, '') || null;
-}
-
-window.addEventListener('hashchange', ()=>{
-  const name = parseHash();
-  if(name) {
-    // update active menu
-    const li = document.querySelector('[data-module="' + name + '"]');
-    if(li) setActiveItem(li);
-    routeTo(name);
-  }
-});
-
-async function routeTo(name){
-  // fade-out/in effect
-  content.classList.remove('fade-in');
-  content.innerHTML = '';
-  try{
-    switch(name){
-      case 'employees':
-        await renderEmployeeModule(content);
-        break;
-      case 'departments':
-        await renderDepartmentModule(content);
-        break;
-      case 'positions':
-        await renderPositionModule(content);
-        break;
-      case 'attendance':
-        await renderAttendanceModule(content);
-        break;
-      case 'salary':
-        await renderSalaryModule(content);
-        break;
-      case 'leave':
-        await renderLeaveModule(content);
-        break;
-      case 'performance':
-        await renderPerformanceModule(content);
-        break;
-      case 'auth':
-        await renderAuthModule(content);
-        break;
-      case 'dashboard':
-      default:
-        content.innerHTML = '<h3>Welcome to HRM Dashboard</h3><p>Chọn module ở menu trái.</p>'
+class App {
+    constructor() {
+        this.currentModule = 'dashboard';
+        this.modules = {
+            dashboard,
+            employees: employeeModule,
+            departments: departmentModule,
+            positions: positionModule,
+            salaries: salaryModule,
+            attendance: attendanceModule,
+            leaves: leaveModule,
+            performance: performanceModule
+        };
+        
+        // Make modal globally accessible
+        window.modal = modal;
+        
+        // Debug: Log all loaded modules
+        console.log('🔧 Loaded modules:', Object.keys(this.modules));
+        console.log('📝 departments module:', departmentModule);
+        console.log('📝 positions module:', positionModule);
+        
+        this.init();
     }
-  }catch(err){
-    console.error(err);
-    content.innerHTML = `<div class="error">Lỗi: ${err.message||err}</div>`;
-  }
-  // trigger fade-in
-  requestAnimationFrame(()=>{ content.classList.add('fade-in'); });
+
+    /**
+     * Initialize application
+     */
+    init() {
+        console.log('🚀 HRM Application Starting...');
+        
+        // Wait for DOM to load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.setup());
+        } else {
+            this.setup();
+        }
+    }
+
+    /**
+     * Setup application
+     */
+    setup() {
+        console.log('⚙️ Setting up application...');
+        
+        // Setup navigation
+        this.setupNavigation();
+        
+        // Setup refresh button
+        this.setupRefresh();
+        
+        // Check authentication
+        this.checkAuth();
+    }
+
+    /**
+     * Check authentication
+     */
+    async checkAuth() {
+        if (!auth.isAuthenticated()) {
+            console.log('🔒 User not authenticated');
+            // Auth module will show login modal
+            return;
+        }
+        
+        console.log('✅ User authenticated');
+        this.loadModule(this.currentModule);
+    }
+
+    /**
+     * Setup navigation
+     */
+    setupNavigation() {
+        const navLinks = document.querySelectorAll('.sidebar .nav-link[data-module]');
+        
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const module = link.dataset.module;
+                this.loadModule(module);
+            });
+        });
+    }
+
+    /**
+     * Setup refresh button
+     */
+    setupRefresh() {
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                this.loadModule(this.currentModule);
+                ui.showToast('Đã làm mới', 'success');
+            });
+        }
+    }
+
+    /**
+     * Load module
+     * @param {string} moduleName 
+     */
+    async loadModule(moduleName) {
+        console.log(`📦 Loading module: ${moduleName}`);
+        
+        // Check if user is authenticated
+        if (!auth.isAuthenticated() && moduleName !== 'auth') {
+            console.log('🔒 Authentication required');
+            return;
+        }
+
+        this.currentModule = moduleName;
+        ui.updateActiveMenu(moduleName);
+
+        try {
+            const module = this.modules[moduleName];
+            
+            console.log(`Module found:`, module);
+            console.log(`Has render method:`, typeof module?.render);
+            
+            if (module && typeof module.render === 'function') {
+                await module.render();
+                console.log(`✅ Module loaded: ${moduleName}`);
+            } else {
+                console.warn(`⚠️ Module not found or has no render method: ${moduleName}`);
+                this.renderNotImplemented(moduleName);
+            }
+        } catch (error) {
+            console.error(`❌ Error loading module ${moduleName}:`, error);
+            ui.showToast('Không thể tải module', 'error');
+        }
+    }
+
+    /**
+     * Render not implemented message
+     * @param {string} moduleName 
+     */
+    renderNotImplemented(moduleName) {
+        const titles = {
+            departments: 'Quản lý Phòng ban',
+            positions: 'Quản lý Vị trí',
+            salaries: 'Quản lý Lương',
+            attendance: 'Chấm công',
+            leaves: 'Quản lý Nghỉ phép',
+            performance: 'Đánh giá Hiệu suất'
+        };
+
+        ui.setPageTitle(titles[moduleName] || 'Module');
+        
+        const mainContent = document.getElementById('mainContent');
+        mainContent.innerHTML = `
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-tools" style="font-size: 4rem; color: #6c757d;"></i>
+                    <h3 class="mt-3">Module đang phát triển</h3>
+                    <p class="text-muted">
+                        Module <strong>${titles[moduleName] || moduleName}</strong> đang được phát triển.
+                        <br>Vui lòng quay lại sau.
+                    </p>
+                    <button class="btn btn-primary mt-3" onclick="app.loadModule('dashboard')">
+                        <i class="bi bi-house"></i> Về Dashboard
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Get current module
+     * @returns {string}
+     */
+    getCurrentModule() {
+        return this.currentModule;
+    }
 }
 
-// initial route: prefer hash if present
-const _token = localStorage.getItem('hrm_token');
-let initial = parseHash();
+// Create and export app instance
+const app = new App();
+window.app = app; // Make it globally accessible
 
-// Validate token if exists
-if(_token){
-  // Quick validation: try to call a protected endpoint
-  try{
-    // We'll do this asynchronously and handle in the background
-    Api.get('employees', 'limit=1').catch(err => {
-      // If 401, token is invalid - clear it
-      if(err.status === 401){
-        localStorage.removeItem('hrm_token');
-        localStorage.removeItem('hrm_user');
-        window.updateUserPanel();
-        // Redirect to auth
-        routeTo('auth');
-        location.hash = '#/auth';
-      }
-    });
-  }catch(e){
-    // Ignore validation errors
-  }
-}
-
-if(initial){
-  // if module requires auth and not logged in, redirect to auth
-  const needsAuth = initial !== 'auth';
-  if(needsAuth && !_token){
-    if(menu) menu.style.display = 'none';
-    routeTo('auth');
-    location.hash = '#/auth';
-  }else{
-    // set active menu item and route
-    const li = document.querySelector('[data-module="' + initial + '"]');
-    if(li) setActiveItem(li);
-    routeTo(initial);
-  }
-}else{
-  if(!_token){
-    if(menu) menu.style.display = 'none';
-    routeTo('auth');
-    location.hash = '#/auth';
-  }else{
-    routeTo('dashboard');
-  }
-}
-
-// export for testing/debug
-window.__API = Api;
-
-// Global error reporting: send JS errors/unhandled rejections to backend logs endpoint.
-// This is intentionally best-effort and won't interrupt app flow.
-function sendClientLog(obj){
-  try{
-    // fire-and-forget
-    Api.post('logs', obj).catch(()=>{});
-  }catch(e){
-    // ignore
-  }
-}
-
-window.addEventListener('error', function(evt){
-  const payload = {
-    level: 'error',
-    message: evt.message || String(evt),
-    filename: evt.filename || null,
-    lineno: evt.lineno || null,
-    colno: evt.colno || null,
-    stack: evt.error && evt.error.stack ? String(evt.error.stack) : null,
-    url: location.href,
-    user: JSON.parse(localStorage.getItem('hrm_user')||'null')
-  };
-  // also log to console for developer visibility
-  console.error('Captured error', payload);
-  sendClientLog(payload);
-});
-
-window.addEventListener('unhandledrejection', function(evt){
-  const reason = evt.reason;
-  const payload = {
-    level: 'unhandledrejection',
-    message: (reason && reason.message) ? reason.message : (String(reason) || 'Promise rejection'),
-    stack: (reason && reason.stack) ? reason.stack : null,
-    url: location.href,
-    user: JSON.parse(localStorage.getItem('hrm_user')||'null')
-  };
-  console.warn('Captured unhandledrejection', payload);
-  sendClientLog(payload);
-});
+export default app;
