@@ -20,7 +20,7 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}       # ftpupload.net
           username: ${{ secrets.FTP_USERNAME }}   # if0_xxx hoặc epiz_xxx
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
+          protocol: ftp
           port: 21
           server-dir: /htdocs/                    # Deploy vào htdocs
           local-dir: ./                           # gốc repo
@@ -30,4 +30,3 @@ jobs:
             node_modules/**
             tests/**
             tools/**
-          dangerous-clean-slate: true           # Xóa sạch và upload lại toàn bộ
