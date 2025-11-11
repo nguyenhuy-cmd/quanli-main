@@ -2,13 +2,62 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Test Deploy</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Deploy - SUCCESS!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        h1 { color: #4ade80; margin: 0 0 20px 0; }
+        .success { background: rgba(74, 222, 128, 0.2); padding: 15px; border-radius: 5px; margin: 20px 0; }
+        a {
+            display: inline-block;
+            background: #4ade80;
+            color: #000;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        a:hover { background: #22c55e; }
+        .info { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin: 10px 0; }
+    </style>
 </head>
 <body>
-    <h1>✅ Deploy thành công!</h1>
-    <p>Nếu bạn thấy trang này, nghĩa là file đã được upload lên hosting.</p>
-    <p>Timestamp: <?php echo date('Y-m-d H:i:s'); ?></p>
-    <hr>
-    <p><a href="index.html">Đi tới ứng dụng chính</a></p>
+    <div class="container">
+        <h1>✅ DEPLOY THÀNH CÔNG!</h1>
+        
+        <div class="success">
+            <p><strong>Chúc mừng!</strong> File đã được upload lên hosting thành công.</p>
+            <p>Deploy time: <span id="time"></span></p>
+        </div>
+        
+        <div class="info">
+            <p><strong>Website:</strong> huy12345.click</p>
+            <p><strong>Hosting:</strong> InfinityFree</p>
+            <p><strong>Deploy method:</strong> GitHub Actions → FTP</p>
+        </div>
+        
+        <hr style="border-color: rgba(255,255,255,0.3); margin: 30px 0;">
+        
+        <a href="/">🏠 Đi tới trang chủ</a>
+        <a href="/index.html">📱 Mở ứng dụng</a>
+    </div>
+    
+    <script>
+        document.getElementById('time').textContent = new Date().toLocaleString('vi-VN');
+    </script>
 </body>
 </html>
