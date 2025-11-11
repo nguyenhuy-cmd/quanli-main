@@ -4,11 +4,7 @@
  * Routes requests to appropriate controllers
  */
 
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-// Load config
+// Load config first (it handles error reporting)
 require_once __DIR__ . '/config/config.php';
 
 // Get resource and action from query string

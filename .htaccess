@@ -1,0 +1,55 @@
+# Enable rewrite engine
+RewriteEngine On
+
+# Set default charset
+AddDefaultCharset UTF-8
+
+# PHP settings for production
+php_flag display_errors Off
+php_flag log_errors On
+php_value error_log error_log.txt
+
+# Prevent directory browsing
+Options -Indexes
+
+# Allow access to necessary files
+<FilesMatch "\.(html|css|js|json|php)$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
+# Protect sensitive files
+<FilesMatch "^(config\.php|\.htaccess|\.git|\.env)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Allow backend API
+<Files "api.php">
+    Order allow,deny
+    Allow from all
+</Files>
+
+# Set default index files
+DirectoryIndex index.html index.php
+
+# CORS headers for API
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+</IfModule>
+
+# Gzip compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Cache control
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+</IfModule>
