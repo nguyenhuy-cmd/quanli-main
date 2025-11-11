@@ -25,9 +25,9 @@ jobs:
           server-dir: /htdocs/                    # Deploy vào htdocs
           local-dir: ./                           # gốc repo
           exclude: |                              # không up đồ thừa
-            **/.git*
-            **/.github/**
-            **/node_modules/**
-            **/tests/**
-            **/tools/**
+            .git/**
+            .github/**
+            node_modules/**
+            tests/**
+            tools/**
           dangerous-clean-slate: true           # Xóa sạch và upload lại toàn bộ
