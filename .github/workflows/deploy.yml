@@ -24,9 +24,17 @@ jobs:
           port: 21
           server-dir: /htdocs/                    # Deploy vào htdocs
           local-dir: ./                           # gốc repo
-          exclude: |                              # không up đồ thừa
+          exclude: |
             .git/**
             .github/**
+            .gitignore
+            .git-ftp-ignore
+            .git-ftp-include
             node_modules/**
             tests/**
             tools/**
+            README.md
+            composer.json
+            composer.lock
+            docker-compose.yml
+          log-level: verbose
