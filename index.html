@@ -3,12 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <meta name="referrer" content="no-referrer">
   <title>HRM - Quản lý nhân sự</title>
   <!-- Google font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* Hide injected ads and tracking scripts from free hosting */
+    iframe[src*="statcounter"],
+    script[src*="statcounter"],
+    script[src*="404tutorial"],
+    div[id*="histats"],
+    div[class*="histats"] {
+      display: none !important;
+      visibility: hidden !important;
+      position: absolute !important;
+      left: -9999px !important;
+    }
+  </style>
 </head>
 <body>
   <div class="app">
@@ -39,7 +54,7 @@
       </section>
     </main>
   </div>
-<!-- DEPLOY_TEST_2025-11-11_14:xx -->
+<!-- DEPLOY_TEST_2025-11-11_16:30 - Fixed CORS and SPA routing -->
   <script type="module" src="./js/app.js"></script>
 </body>
 </html>
