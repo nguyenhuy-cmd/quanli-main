@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0  # cần để git-ftp so sánh diff
 
       - name: Deploy via Git-FTP (only changed files)
-        uses: sebastianpopp/git-ftp-action@v3.3.0
+        uses: sebastianpopp/git-ftp-action@3.3.0
         with:
           # Cách 1: dùng secret FTP_SERVER (đã tạo trong Settings > Secrets)
           url: ftp://${{ secrets.FTP_SERVER }}/htdocs/
