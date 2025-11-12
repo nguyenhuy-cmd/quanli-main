@@ -3,7 +3,7 @@
  * Handles all API requests using fetch
  */
 
-const API_BASE_URL = '/quanli-main/backend/api.php';
+const API_BASE_URL = '/backend/api.php';
 
 class APIService {
     constructor() {
