@@ -42,4 +42,4 @@ jobs:
           
       - name: Verify deployment
         run: |
-          echo "Deployment completed. Please verify at https://huy12345.click/test-deploy.html"
+          echo "Deployment completed. Please verify at https://huyhrm.rf.gd/test-deploy.html"
