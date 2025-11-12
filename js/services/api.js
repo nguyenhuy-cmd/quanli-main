@@ -62,6 +62,15 @@ class APIService {
 
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+            
+            // Kiểm tra content-type trước khi parse JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Non-JSON response:', text);
+                throw new Error('Server returned non-JSON response');
+            }
+
             const result = await response.json();
 
             if (!response.ok) {

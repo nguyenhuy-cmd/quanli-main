@@ -4,6 +4,16 @@
  * Routes requests to appropriate controllers
  */
 
+// Set error handler to always return JSON
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Server error: ' . $errstr
+    ]);
+    exit;
+});
+
 // Load config first (it handles error reporting)
 require_once __DIR__ . '/config/config.php';
 

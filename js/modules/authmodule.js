@@ -76,6 +76,7 @@ class AuthModule {
         const token = api.getToken();
         
         if (!token) {
+            console.log('User not authenticated');
             this.showLoginModal();
             return;
         }
@@ -87,10 +88,13 @@ class AuthModule {
                 this.updateUserInfo();
                 this.hideLoginModal();
             } else {
+                console.log('Auth failed:', response.message);
+                api.removeToken(); // Remove invalid token
                 this.showLoginModal();
             }
         } catch (error) {
             console.error('Auth check failed:', error);
+            api.removeToken(); // Remove invalid token
             this.showLoginModal();
         }
     }
