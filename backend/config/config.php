@@ -77,44 +77,20 @@ class Database {
 
     private function __construct() {
         try {
-            // Set default socket timeout to avoid hanging
-            ini_set('default_socket_timeout', 2);
-            ini_set('mysql.connect_timeout', 2);
-            
-            // Try different connection methods
-            $connectionAttempts = [
-                // Method 1: Direct IP without port in DSN
-                "mysql:host=127.0.0.1;dbname=" . DB_NAME . ";charset=" . DB_CHARSET,
-                // Method 2: Localhost
-                "mysql:host=localhost;dbname=" . DB_NAME . ";charset=" . DB_CHARSET,
-            ];
+            // Use DB_HOST constant directly - it will be correct for each environment
+            $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
             
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
-                PDO::ATTR_TIMEOUT => 2,
                 PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"
             ];
             
-            $lastError = null;
-            foreach ($connectionAttempts as $dsn) {
-                try {
-                    $this->connection = new PDO($dsn, DB_USER, DB_PASS, $options);
-                    // If successful, break the loop
-                    error_log('Database connected using: ' . $dsn);
-                    return;
-                } catch (PDOException $e) {
-                    $lastError = $e;
-                    continue;
-                }
-            }
-            
-            // If all attempts failed, throw the last error
-            throw $lastError;
+            $this->connection = new PDO($dsn, DB_USER, DB_PASS, $options);
+            error_log('Database connected successfully to: ' . DB_HOST);
             
         } catch (PDOException $e) {
-            // Log error instead of die
             error_log('Database connection failed: ' . $e->getMessage());
             throw new Exception('Database connection failed: ' . $e->getMessage());
         }
