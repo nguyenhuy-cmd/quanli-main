@@ -3,17 +3,17 @@
  * Initializes and manages the HRM application
  */
 
-import auth from './modules/AuthModule.js?v=7';
-import dashboard from './modules/dashboardModule.js?v=7';
-import employeeModule from './modules/employeeModule.js?v=7';
-import departmentModule from './modules/departmentModule.js?v=7';
-import positionModule from './modules/positionModule.js?v=7';
-import salaryModule from './modules/salaryModule.js?v=7';
-import attendanceModule from './modules/attendanceModule.js?v=7';
-import leaveModule from './modules/leaveModule.js?v=7';
-import performanceModule from './modules/performanceModule.js?v=7';
-import ui from './utils/ui.js?v=7';
-import modal from './utils/modal.js?v=3';
+import auth from './modules/authmodule.js?v=10';
+import dashboard from './modules/dashboardmodule.js?v=10';
+import employeeModule from './modules/employeemodule.js?v=10';
+import departmentModule from './modules/departmentmodule.js?v=10';
+import positionModule from './modules/positionmodule.js?v=10';
+import salaryModule from './modules/salarymodule.js?v=10';
+import attendanceModule from './modules/attendancemodule.js?v=10';
+import leaveModule from './modules/leavemodule.js?v=10';
+import performanceModule from './modules/performancemodule.js?v=10';
+import ui from './utils/ui.js?v=10';
+import modal from './utils/modal.js?v=10';
 
 class App {
     constructor() {
