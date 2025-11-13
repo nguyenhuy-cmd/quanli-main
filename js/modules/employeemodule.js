@@ -129,20 +129,23 @@ class EmployeeModule {
     /**
      * Handle search
      */
-    async handleSearch(keyword) {
+    handleSearch(keyword) {
         if (!keyword.trim()) {
             this.renderTable(this.employees);
             return;
         }
 
-        try {
-            const response = await api.get(`?resource=employees&action=search&keyword=${encodeURIComponent(keyword)}`);
-            if (response.success) {
-                this.renderTable(response.data);
-            }
-        } catch (error) {
-            ui.showToast('Tìm kiếm thất bại', 'error');
-        }
+        const searchTerm = keyword.toLowerCase();
+        const filtered = this.employees.filter(emp => 
+            emp.full_name?.toLowerCase().includes(searchTerm) ||
+            emp.employee_code?.toLowerCase().includes(searchTerm) ||
+            emp.email?.toLowerCase().includes(searchTerm) ||
+            emp.phone?.includes(searchTerm) ||
+            emp.department_name?.toLowerCase().includes(searchTerm) ||
+            emp.position_title?.toLowerCase().includes(searchTerm)
+        );
+
+        this.renderTable(filtered);
     }
 
     /**
