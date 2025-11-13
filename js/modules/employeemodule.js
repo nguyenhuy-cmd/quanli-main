@@ -28,12 +28,6 @@ class EmployeeModule {
                     </button>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control" id="searchEmployee" placeholder="Tìm kiếm nhân viên...">
-                        </div>
-                    </div>
                     <div id="employeeTableContainer"></div>
                 </div>
             </div>
@@ -53,11 +47,6 @@ class EmployeeModule {
         const addBtn = document.getElementById('addEmployeeBtn');
         if (addBtn) {
             addBtn.addEventListener('click', () => this.showAddModal());
-        }
-
-        const searchInput = document.getElementById('searchEmployee');
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
         }
     }
 
