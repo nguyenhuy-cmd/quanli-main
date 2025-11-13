@@ -84,7 +84,16 @@ class APIService {
         let retries = 0;
         while (retries < this.maxRetries) {
             try {
-                const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+                // Add timeout to prevent hanging
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    ...config,
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
             
                 // Kiểm tra content-type trước khi parse JSON
                 const contentType = response.headers.get('content-type');
@@ -129,6 +138,17 @@ class APIService {
             return result;
             
         } catch (error) {
+            // Handle abort/timeout
+            if (error.name === 'AbortError') {
+                console.warn(`Request timeout, retry ${retries + 1}/${this.maxRetries}...`);
+                if (retries >= this.maxRetries - 1) {
+                    throw new Error('Request timeout after ' + this.maxRetries + ' retries');
+                }
+                retries++;
+                await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+                continue;
+            }
+            
             if (retries >= this.maxRetries - 1) {
                 console.error('API Error:', error);
                 throw error;
