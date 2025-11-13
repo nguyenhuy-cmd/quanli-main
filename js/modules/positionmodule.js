@@ -68,11 +68,11 @@ class PositionModule {
             return;
         }
 
-        const headers = ['ID', 'Tên vị trí', 'Mức lương', 'Số nhân viên', 'Thao tác'];
+        const headers = ['ID', 'Tên vị trí', 'Lương cơ bản', 'Số nhân viên', 'Thao tác'];
         const rows = this.positions.map(pos => [
             pos.id,
             pos.title,
-            ui.formatCurrency(pos.min_salary || 0) + ' - ' + ui.formatCurrency(pos.max_salary || 0),
+            ui.formatCurrency(pos.base_salary || 0),
             `<span class="badge bg-info">${pos.employee_count || 0}</span>`,
             `
                 <button class="btn btn-sm btn-warning" onclick="positionModule.showEditModal(${pos.id})">
@@ -91,8 +91,7 @@ class PositionModule {
         const fields = [
             { name: 'title', label: 'Tên vị trí', type: 'text', required: true, placeholder: 'VD: Lập trình viên Senior' },
             { name: 'description', label: 'Mô tả công việc', type: 'textarea', rows: 3 },
-            { name: 'min_salary', label: 'Lương tối thiểu', type: 'number', required: true, placeholder: '10000000' },
-            { name: 'max_salary', label: 'Lương tối đa', type: 'number', required: true, placeholder: '20000000' }
+            { name: 'base_salary', label: 'Lương cơ bản', type: 'number', required: true, placeholder: '15000000' }
         ];
 
         modal.createFormModal('Thêm vị trí mới', fields, async (formData) => {
@@ -123,8 +122,7 @@ class PositionModule {
         const fields = [
             { name: 'title', label: 'Tên vị trí', type: 'text', required: true },
             { name: 'description', label: 'Mô tả công việc', type: 'textarea', rows: 3 },
-            { name: 'min_salary', label: 'Lương tối thiểu', type: 'number', required: true },
-            { name: 'max_salary', label: 'Lương tối đa', type: 'number', required: true }
+            { name: 'base_salary', label: 'Lương cơ bản', type: 'number', required: true }
         ];
 
         modal.createFormModal('Cập nhật vị trí', fields, async (formData) => {
