@@ -51,7 +51,20 @@ abstract class Controller {
      * @return string
      */
     protected function getMethod() {
-        return $_SERVER['REQUEST_METHOD'];
+        // Check for _method override (InfinityFree workaround)
+        $method = $_SERVER['REQUEST_METHOD'];
+        
+        if ($method === 'POST') {
+            $input = $this->getJsonInput();
+            if (isset($input['_method'])) {
+                return strtoupper($input['_method']);
+            }
+            if (isset($_POST['_method'])) {
+                return strtoupper($_POST['_method']);
+            }
+        }
+        
+        return $method;
     }
 
     /**
@@ -60,7 +73,14 @@ abstract class Controller {
      */
     protected function getJsonInput() {
         $input = file_get_contents('php://input');
-        return json_decode($input, true) ?? [];
+        $data = json_decode($input, true) ?? [];
+        
+        // Remove _method from data if present
+        if (isset($data['_method'])) {
+            unset($data['_method']);
+        }
+        
+        return $data;
     }
 
     /**

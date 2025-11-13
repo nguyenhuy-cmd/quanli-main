@@ -38,6 +38,21 @@ set_exception_handler(function($exception) {
 // Load config first (it handles error reporting)
 require_once __DIR__ . '/config/config.php';
 
+// Handle _method workaround for PUT/DELETE (InfinityFree compatibility)
+$requestMethod = $_SERVER['REQUEST_METHOD'];
+
+// Get input data
+$inputData = file_get_contents('php://input');
+$jsonData = json_decode($inputData, true) ?: [];
+
+// Check for _method in JSON body
+if ($requestMethod === 'POST' && isset($jsonData['_method'])) {
+    $requestMethod = strtoupper($jsonData['_method']);
+    unset($jsonData['_method']);
+    // Store cleaned data back for controllers to use
+    $_POST = array_merge($_POST, $jsonData);
+}
+
 // Get resource and action from query string
 $resource = $_GET['resource'] ?? '';
 $action = $_GET['action'] ?? '';

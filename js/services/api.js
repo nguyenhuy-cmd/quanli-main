@@ -17,6 +17,7 @@ console.log('API Base URL:', API_BASE_URL);
 class APIService {
     constructor() {
         this.token = localStorage.getItem('auth_token') || '';
+        this.maxRetries = 3;
     }
 
     /**
@@ -61,37 +62,50 @@ class APIService {
             headers['Authorization'] = `Bearer ${this.token}`;
         }
 
+        // WORKAROUND: InfinityFree blocks PUT/DELETE - convert to POST with _method
+        let actualMethod = method;
+        let requestData = data;
+        
+        if (method === 'PUT' || method === 'DELETE') {
+            actualMethod = 'POST';
+            requestData = data ? { ...data, _method: method } : { _method: method };
+        }
+
         const config = {
-            method,
+            method: actualMethod,
             headers,
             cache: 'no-cache',
         };
 
-        if (data && (method === 'POST' || method === 'PUT')) {
-            config.body = JSON.stringify(data);
+        if (requestData && (actualMethod === 'POST' || actualMethod === 'PUT')) {
+            config.body = JSON.stringify(requestData);
         }
 
-        try {
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+        let retries = 0;
+        while (retries < this.maxRetries) {
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
             
-            // Kiểm tra content-type trước khi parse JSON
-            const contentType = response.headers.get('content-type');
+                // Kiểm tra content-type trước khi parse JSON
+                const contentType = response.headers.get('content-type');
             
             // Lấy text response trước
             const text = await response.text();
             
             // Nếu response chứa HTML anti-bot của InfinityFree
             if (text.includes('slowAES.decrypt') || text.includes('toNumbers')) {
-                console.warn('InfinityFree anti-bot detected, retrying...');
-                // Đợi 2 giây rồi thử lại
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                // Thử lại một lần nữa
-                return this.request(endpoint, method, data);
+                if (retries >= this.maxRetries - 1) {
+                    throw new Error('Anti-bot protection triggered after ' + this.maxRetries + ' retries');
+                }
+                console.warn(`InfinityFree anti-bot detected, retry ${retries + 1}/${this.maxRetries}...`);
+                retries++;
+                await new Promise(resolve => setTimeout(resolve, 1500 * retries));
+                continue;
             }
             
             // Nếu không phải JSON
             if (!contentType || !contentType.includes('application/json')) {
-                console.error('Non-JSON response:', text);
+                console.error('Non-JSON response:', text.substring(0, 200));
                 throw new Error('Server returned non-JSON response. Please check your hosting configuration.');
             }
 
@@ -101,7 +115,6 @@ class APIService {
                 result = JSON.parse(text);
             } catch (e) {
                 console.error('JSON parse error:', text.substring(0, 500));
-                console.error('Full response:', text);
                 throw new Error('Invalid JSON response from server: ' + e.message);
             }
 
@@ -114,11 +127,17 @@ class APIService {
             }
 
             return result;
+            
         } catch (error) {
-            console.error('API Error:', error);
-            throw error;
+            if (retries >= this.maxRetries - 1) {
+                console.error('API Error:', error);
+                throw error;
+            }
+            retries++;
+            await new Promise(resolve => setTimeout(resolve, 1000 * retries));
         }
     }
+}
 
     /**
      * GET request
