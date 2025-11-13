@@ -1,34 +1,6 @@
-# Disable InfinityFree anti-bot protection for API
-# This allows JSON responses to work properly
-
+# Pass Authorization header to PHP for JWT
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    
-    # Pass Authorization header to PHP (important for JWT)
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-    
-    # Allow direct access to API without bot check
-    RewriteCond %{REQUEST_URI} ^/backend/api\.php [NC]
-    RewriteRule .* - [E=noconntect:1]
 </IfModule>
-
-# Security headers
-<IfModule mod_headers.c>
-    Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "SAMEORIGIN"
-    Header set X-XSS-Protection "1; mode=block"
-    
-    # Set proper content type for API responses
-    <FilesMatch "\.php$">
-        Header set Content-Type "application/json; charset=utf-8"
-    </FilesMatch>
-</IfModule>
-
-# Disable directory listing
-Options -Indexes
-
-# Error pages
-ErrorDocument 404 /404.html
-ErrorDocument 403 /403.html
-ErrorDocument 500 /500.html
