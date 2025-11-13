@@ -71,6 +71,11 @@ class AuthController extends Controller {
                 $this->sendError('Invalid email or password', 401);
             }
             
+            // Ensure role is set (default to 'employee' if not set)
+            if (!isset($user['role']) || empty($user['role'])) {
+                $user['role'] = 'employee';
+            }
+            
             // Generate JWT token
             $token = $this->encodeJWT([
                 'id' => $user['id'],
@@ -158,6 +163,11 @@ class AuthController extends Controller {
             // Get fresh user data from database
             $userData = $this->userModel->getById($user['id']);
             unset($userData['password']);
+            
+            // Ensure role is set
+            if (!isset($userData['role']) || empty($userData['role'])) {
+                $userData['role'] = 'employee';
+            }
             
             $this->sendSuccess($userData);
             
