@@ -118,8 +118,8 @@ abstract class Controller {
      * @return array|false User data or false
      */
     protected function checkAuth() {
-        $headers = getallheaders();
-        $token = $headers['Authorization'] ?? '';
+        // Get authorization header (compatible with all environments)
+        $token = $this->getAuthorizationHeader();
         
         if (empty($token)) {
             return false;
@@ -135,6 +135,29 @@ abstract class Controller {
         } catch (Exception $e) {
             return false;
         }
+    }
+    
+    /**
+     * Get Authorization header (compatible with FastCGI/CGI/Apache)
+     * @return string
+     */
+    protected function getAuthorizationHeader() {
+        $headers = null;
+        
+        // Try different methods to get headers
+        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $headers = $_SERVER['HTTP_AUTHORIZATION'];
+        } elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            $headers = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        } elseif (function_exists('apache_request_headers')) {
+            $requestHeaders = apache_request_headers();
+            $headers = $requestHeaders['Authorization'] ?? $requestHeaders['authorization'] ?? '';
+        } elseif (function_exists('getallheaders')) {
+            $requestHeaders = getallheaders();
+            $headers = $requestHeaders['Authorization'] ?? $requestHeaders['authorization'] ?? '';
+        }
+        
+        return $headers ?? '';
     }
 
     /**
