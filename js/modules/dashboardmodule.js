@@ -123,8 +123,15 @@ class DashboardModule {
                 document.getElementById('pendingLeaves').textContent = pending.length || 0;
             }
 
-            // Load average rating
-            document.getElementById('averageRating').textContent = '4.5';
+            // Load average rating from performance reviews
+            const perfResponse = await api.get('?resource=performance');
+            if (perfResponse.success && perfResponse.data.length > 0) {
+                const totalRating = perfResponse.data.reduce((sum, p) => sum + parseFloat(p.rating || 0), 0);
+                const avgRating = totalRating / perfResponse.data.length;
+                document.getElementById('averageRating').textContent = avgRating.toFixed(1);
+            } else {
+                document.getElementById('averageRating').textContent = '0';
+            }
 
             // Load today's attendance
             await this.loadTodayAttendance();
