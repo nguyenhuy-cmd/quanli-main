@@ -88,17 +88,17 @@ class AttendanceModule {
         const headers = ['ID', 'Nhân viên', 'Ngày', 'Giờ vào', 'Giờ ra', 'Trạng thái', 'Ghi chú'];
         const rows = this.attendances.map(att => {
             let statusBadge = '';
-            if (att.attendance_status === 'present') statusBadge = '<span class="badge bg-success">Đúng giờ</span>';
-            else if (att.attendance_status === 'late') statusBadge = '<span class="badge bg-warning">Muộn</span>';
-            else if (att.attendance_status === 'absent') statusBadge = '<span class="badge bg-danger">Vắng</span>';
+            if (att.status === 'present') statusBadge = '<span class="badge bg-success">Đúng giờ</span>';
+            else if (att.status === 'late') statusBadge = '<span class="badge bg-warning">Muộn</span>';
+            else if (att.status === 'absent') statusBadge = '<span class="badge bg-danger">Vắng</span>';
             else statusBadge = '<span class="badge bg-secondary">Khác</span>';
 
             return [
                 att.id,
                 att.employee_name || 'N/A',
-                ui.formatDate(att.attendance_date),
-                att.check_in_time || '-',
-                att.check_out_time || '-',
+                ui.formatDate(att.date),
+                att.check_in || '-',
+                att.check_out || '-',
                 statusBadge,
                 att.notes || '-'
             ];
