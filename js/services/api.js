@@ -3,7 +3,16 @@
  * Handles all API requests using fetch
  */
 
-const API_BASE_URL = '/backend/api.php';
+// Detect if running on production
+const isProduction = window.location.hostname !== 'localhost' && 
+                     window.location.hostname !== '127.0.0.1';
+
+// Use different endpoint for production to bypass anti-bot
+const API_BASE_URL = isProduction 
+    ? '/backend/api-endpoint.php'  // Production: use wrapper
+    : '/backend/api.php';          // Local: use direct API
+
+console.log('API Base URL:', API_BASE_URL);
 
 class APIService {
     constructor() {
@@ -45,6 +54,7 @@ class APIService {
     async request(endpoint, method = 'GET', data = null) {
         const headers = {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
         };
 
         if (this.token) {
@@ -54,6 +64,7 @@ class APIService {
         const config = {
             method,
             headers,
+            cache: 'no-cache',
         };
 
         if (data && (method === 'POST' || method === 'PUT')) {
@@ -65,13 +76,33 @@ class APIService {
             
             // Kiểm tra content-type trước khi parse JSON
             const contentType = response.headers.get('content-type');
+            
+            // Lấy text response trước
+            const text = await response.text();
+            
+            // Nếu response chứa HTML anti-bot của InfinityFree
+            if (text.includes('slowAES.decrypt') || text.includes('toNumbers')) {
+                console.warn('InfinityFree anti-bot detected, retrying...');
+                // Đợi 2 giây rồi thử lại
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Thử lại một lần nữa
+                return this.request(endpoint, method, data);
+            }
+            
+            // Nếu không phải JSON
             if (!contentType || !contentType.includes('application/json')) {
-                const text = await response.text();
                 console.error('Non-JSON response:', text);
-                throw new Error('Server returned non-JSON response');
+                throw new Error('Server returned non-JSON response. Please check your hosting configuration.');
             }
 
-            const result = await response.json();
+            // Parse JSON
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (e) {
+                console.error('JSON parse error:', text);
+                throw new Error('Invalid JSON response from server');
+            }
 
             if (!response.ok) {
                 throw new Error(result.message || 'Request failed');

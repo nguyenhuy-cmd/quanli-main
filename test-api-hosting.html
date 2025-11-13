@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Hosting</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 15px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        .loading {
+            display: none;
+            margin-left: 10px;
+        }
+        .loading.active {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Test API Hosting - Anti-Bot Detection</h1>
+        
+        <div class="test-section">
+            <h2>1. Environment Info</h2>
+            <div id="envInfo" class="result info">
+                <strong>Current URL:</strong> <span id="currentUrl"></span><br>
+                <strong>Environment:</strong> <span id="environment"></span><br>
+                <strong>API Base URL:</strong> <span id="apiBaseUrl"></span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Test API Endpoints</h2>
+            <button onclick="testEndpoint('/backend/api.php')">Test api.php (Original)</button>
+            <button onclick="testEndpoint('/backend/api-endpoint.php')">Test api-endpoint.php (Wrapper)</button>
+            <span class="loading" id="loading1">⏳ Loading...</span>
+            <div id="endpointResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Test Auth Me (No Token)</h2>
+            <button onclick="testAuthMe()">Test Auth Me</button>
+            <span class="loading" id="loading2">⏳ Loading...</span>
+            <div id="authMeResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Test Anti-Bot Detection</h2>
+            <button onclick="testAntiBotDetection()">Run Anti-Bot Test</button>
+            <span class="loading" id="loading3">⏳ Loading...</span>
+            <div id="antiBotResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>5. Test Full Flow</h2>
+            <input type="text" id="testEmail" placeholder="Email" style="padding: 8px; width: 200px;">
+            <input type="password" id="testPassword" placeholder="Password" style="padding: 8px; width: 200px;">
+            <button onclick="testLogin()">Test Login</button>
+            <span class="loading" id="loading4">⏳ Loading...</span>
+            <div id="loginResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Detect environment
+        const isProduction = window.location.hostname !== 'localhost' && 
+                             window.location.hostname !== '127.0.0.1';
+        
+        const API_BASE_URL = isProduction 
+            ? '/backend/api-endpoint.php'
+            : '/backend/api.php';
+
+        // Update environment info
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('environment').textContent = isProduction ? 'PRODUCTION' : 'LOCAL';
+        document.getElementById('apiBaseUrl').textContent = API_BASE_URL;
+
+        async function testEndpoint(endpoint) {
+            const resultDiv = document.getElementById('endpointResult');
+            const loading = document.getElementById('loading1');
+            
+            loading.classList.add('active');
+            resultDiv.textContent = 'Testing...';
+            resultDiv.className = 'result info';
+
+            try {
+                const url = `${endpoint}?resource=auth&action=me`;
+                console.log('Testing URL:', url);
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const contentType = response.headers.get('content-type');
+                const text = await response.text();
+
+                let result = `Status: ${response.status}\n`;
+                result += `Content-Type: ${contentType}\n\n`;
+                
+                // Check for anti-bot
+                if (text.includes('slowAES') || text.includes('toNumbers')) {
+                    result += '❌ ANTI-BOT DETECTED!\n\n';
+                    result += 'Response contains InfinityFree anti-bot code:\n';
+                    result += text.substring(0, 200) + '...';
+                    resultDiv.className = 'result error';
+                } else if (contentType && contentType.includes('application/json')) {
+                    result += '✅ Valid JSON Response:\n\n';
+                    result += JSON.stringify(JSON.parse(text), null, 2);
+                    resultDiv.className = 'result success';
+                } else {
+                    result += '⚠️ Non-JSON Response:\n\n';
+                    result += text.substring(0, 500);
+                    resultDiv.className = 'result error';
+                }
+
+                resultDiv.textContent = result;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        async function testAuthMe() {
+            const resultDiv = document.getElementById('authMeResult');
+            const loading = document.getElementById('loading2');
+            
+            loading.classList.add('active');
+            resultDiv.textContent = 'Testing...';
+            resultDiv.className = 'result info';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}?resource=auth&action=me`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const text = await response.text();
+                
+                // Check for anti-bot
+                if (text.includes('slowAES')) {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '❌ Anti-bot detected in response!\n\nThe wrapper is not working properly.';
+                    return;
+                }
+
+                const data = JSON.parse(text);
+                resultDiv.className = 'result success';
+                resultDiv.textContent = '✅ Success!\n\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        async function testAntiBotDetection() {
+            const resultDiv = document.getElementById('antiBotResult');
+            const loading = document.getElementById('loading3');
+            
+            loading.classList.add('active');
+            resultDiv.className = 'result info';
+            
+            let log = 'Starting anti-bot detection test...\n\n';
+            resultDiv.textContent = log;
+
+            try {
+                // Test 1: Check for anti-bot in raw response
+                log += '1. Checking raw response...\n';
+                resultDiv.textContent = log;
+
+                const response = await fetch(`${API_BASE_URL}?resource=auth&action=me`);
+                const text = await response.text();
+                
+                const hasAntiBot = text.includes('slowAES') || text.includes('toNumbers');
+                
+                log += hasAntiBot ? '   ❌ Anti-bot code detected\n' : '   ✅ No anti-bot code\n';
+                log += '\n';
+
+                // Test 2: Check content-type
+                log += '2. Checking Content-Type header...\n';
+                const contentType = response.headers.get('content-type');
+                log += `   Content-Type: ${contentType}\n`;
+                log += contentType && contentType.includes('json') ? '   ✅ Correct\n' : '   ❌ Wrong\n';
+                log += '\n';
+
+                // Test 3: Try to parse JSON
+                log += '3. Attempting to parse JSON...\n';
+                try {
+                    const data = JSON.parse(text);
+                    log += '   ✅ Valid JSON\n';
+                    log += `   Data: ${JSON.stringify(data, null, 2)}\n`;
+                    resultDiv.className = 'result success';
+                } catch (e) {
+                    log += '   ❌ Invalid JSON\n';
+                    log += `   Error: ${e.message}\n`;
+                    log += `   First 200 chars: ${text.substring(0, 200)}\n`;
+                    resultDiv.className = 'result error';
+                }
+
+                resultDiv.textContent = log;
+            } catch (error) {
+                log += `\n❌ Test failed: ${error.message}`;
+                resultDiv.textContent = log;
+                resultDiv.className = 'result error';
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('loginResult');
+            const loading = document.getElementById('loading4');
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+
+            if (!email || !password) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '⚠️ Please enter email and password';
+                return;
+            }
+
+            loading.classList.add('active');
+            resultDiv.textContent = 'Attempting login...';
+            resultDiv.className = 'result info';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}?resource=auth&action=login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const text = await response.text();
+                
+                // Check for anti-bot
+                if (text.includes('slowAES')) {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '❌ Anti-bot detected!\n\nLogin request was blocked by anti-bot protection.';
+                    return;
+                }
+
+                const data = JSON.parse(text);
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = '✅ Login successful!\n\n' + JSON.stringify(data, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '❌ Login failed:\n\n' + JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        // Auto-run environment test on load
+        window.addEventListener('load', () => {
+            console.log('Environment:', isProduction ? 'PRODUCTION' : 'LOCAL');
+            console.log('API Base URL:', API_BASE_URL);
+        });
+    </script>
+</body>
+</html>

@@ -45,6 +45,14 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Content-Type: application/json; charset=utf-8');
 
+// Bypass InfinityFree anti-bot for API requests
+if ($isProduction) {
+    header('X-Robots-Tag: noindex, nofollow');
+    // Force output buffer to prevent any HTML injection
+    if (ob_get_level()) ob_end_clean();
+    ob_start();
+}
+
 // Handle preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
