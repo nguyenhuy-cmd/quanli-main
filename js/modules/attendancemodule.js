@@ -122,7 +122,7 @@ class AttendanceModule {
                 })) : []
             },
             { name: 'date', label: 'Ngày', type: 'date', required: true, defaultValue: new Date().toISOString().split('T')[0] },
-            { name: 'check_in_time', label: 'Giờ vào', type: 'text', required: true, defaultValue: new Date().toTimeString().split(' ')[0].substring(0, 5), placeholder: 'HH:MM' },
+            { name: 'check_in', label: 'Giờ vào', type: 'text', required: true, defaultValue: new Date().toTimeString().split(' ')[0].substring(0, 5), placeholder: 'HH:MM' },
             { name: 'notes', label: 'Ghi chú', type: 'textarea', rows: 2 }
         ];
 
@@ -162,7 +162,7 @@ class AttendanceModule {
                 })) : []
             },
             { name: 'date', label: 'Ngày', type: 'date', required: true, defaultValue: new Date().toISOString().split('T')[0] },
-            { name: 'check_out_time', label: 'Giờ ra', type: 'text', required: true, defaultValue: new Date().toTimeString().split(' ')[0].substring(0, 5), placeholder: 'HH:MM' },
+            { name: 'check_out', label: 'Giờ ra', type: 'text', required: true, defaultValue: new Date().toTimeString().split(' ')[0].substring(0, 5), placeholder: 'HH:MM' },
             { name: 'notes', label: 'Ghi chú', type: 'textarea', rows: 2 }
         ];
 

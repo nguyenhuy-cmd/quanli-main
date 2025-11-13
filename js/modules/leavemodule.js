@@ -130,7 +130,7 @@ class LeaveModule {
             },
             { name: 'start_date', label: 'Từ ngày', type: 'date', required: true },
             { name: 'end_date', label: 'Đến ngày', type: 'date', required: true },
-            { name: 'total_days', label: 'Số ngày', type: 'number', required: true, placeholder: '1' },
+            { name: 'days', label: 'Số ngày', type: 'number', required: true, placeholder: '1' },
             { name: 'reason', label: 'Lý do', type: 'textarea', required: true, rows: 3 }
         ];
 

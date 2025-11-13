@@ -124,8 +124,8 @@ class PerformanceModule {
                 required: true,
                 placeholder: '1'
             },
-            { name: 'review_period_start', label: 'Từ ngày', type: 'date', required: true },
-            { name: 'review_period_end', label: 'Đến ngày', type: 'date', required: true },
+            { name: 'period_start', label: 'Từ ngày', type: 'date', required: true },
+            { name: 'period_end', label: 'Đến ngày', type: 'date', required: true },
             { name: 'rating', label: 'Điểm tổng (0-5)', type: 'number', required: true, placeholder: '4.5' },
             { name: 'technical_skills', label: 'Kỹ năng chuyên môn (0-5)', type: 'number', placeholder: '4.0' },
             { name: 'communication_skills', label: 'Kỹ năng giao tiếp (0-5)', type: 'number', placeholder: '4.0' },
@@ -135,7 +135,7 @@ class PerformanceModule {
             { name: 'weaknesses', label: 'Điểm cần cải thiện', type: 'textarea', rows: 3 },
             { name: 'recommendations', label: 'Đề xuất', type: 'textarea', rows: 3 },
             { 
-                name: 'review_status', 
+                name: 'status', 
                 label: 'Trạng thái', 
                 type: 'select', 
                 required: true,
@@ -191,8 +191,8 @@ class PerformanceModule {
                 type: 'number', 
                 required: true
             },
-            { name: 'review_period_start', label: 'Từ ngày', type: 'date', required: true },
-            { name: 'review_period_end', label: 'Đến ngày', type: 'date', required: true },
+            { name: 'period_start', label: 'Từ ngày', type: 'date', required: true },
+            { name: 'period_end', label: 'Đến ngày', type: 'date', required: true },
             { name: 'rating', label: 'Điểm tổng (0-5)', type: 'number', required: true },
             { name: 'technical_skills', label: 'Kỹ năng chuyên môn (0-5)', type: 'number' },
             { name: 'communication_skills', label: 'Kỹ năng giao tiếp (0-5)', type: 'number' },
@@ -202,7 +202,7 @@ class PerformanceModule {
             { name: 'weaknesses', label: 'Điểm cần cải thiện', type: 'textarea', rows: 3 },
             { name: 'recommendations', label: 'Đề xuất', type: 'textarea', rows: 3 },
             { 
-                name: 'review_status', 
+                name: 'status', 
                 label: 'Trạng thái', 
                 type: 'select', 
                 required: true,
