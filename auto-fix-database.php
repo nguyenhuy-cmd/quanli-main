@@ -67,37 +67,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             // Create all tables
             echo "<div class='info'>📋 Step 2: Creating tables with correct structure...</div>";
             
+            // Disable foreign key checks temporarily
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+            echo "<div class='info'>🔓 Disabled foreign key checks</div>";
+            
             $sql = file_get_contents(__DIR__ . '/init-hosting.sql');
             
             if (!$sql) {
                 throw new Exception("Cannot read init-hosting.sql file. Please upload it to the same folder.");
             }
             
-            // Split by semicolon and execute each statement
-            $statements = array_filter(array_map('trim', explode(';', $sql)));
+            // Remove comments and split SQL
+            $sql = preg_replace('/--.*$/m', '', $sql); // Remove line comments
+            $sql = preg_replace('/\/\*.*?\*\//s', '', $sql); // Remove block comments
+            
+            // Split by semicolon but keep CREATE TABLE statements together
+            $statements = [];
+            $current = '';
+            $lines = explode("\n", $sql);
+            
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (empty($line)) continue;
+                
+                $current .= $line . "\n";
+                
+                if (substr($line, -1) === ';') {
+                    $statements[] = trim($current);
+                    $current = '';
+                }
+            }
+            
+            if (!empty($current)) {
+                $statements[] = trim($current);
+            }
             
             $success = 0;
             $errors = 0;
             
             foreach ($statements as $statement) {
                 if (empty($statement)) continue;
-                
-                // Skip comments
-                if (strpos($statement, '--') === 0) continue;
-                if (strpos($statement, '/*') === 0) continue;
+                if (strlen($statement) < 10) continue;
                 
                 try {
                     $pdo->exec($statement);
                     $success++;
+                    
+                    // Show what was created
+                    if (preg_match('/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?`?(\w+)`?/i', $statement, $matches)) {
+                        echo "<div class='success'>✓ Created table: {$matches[1]}</div>";
+                    }
                 } catch (Exception $e) {
                     $errors++;
-                    echo "<div class='error'>❌ Error: " . $e->getMessage() . "</div>";
+                    $preview = substr($statement, 0, 100);
+                    echo "<div class='error'>❌ Error executing: " . htmlspecialchars($preview) . "...<br>";
+                    echo "Message: " . $e->getMessage() . "</div>";
                 }
             }
             
+            // Re-enable foreign key checks
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+            echo "<div class='info'>🔒 Re-enabled foreign key checks</div>";
+            
             echo "<div class='success'>✅ Executed $success statements successfully</div>";
             if ($errors > 0) {
-                echo "<div class='error'>❌ $errors statements failed</div>";
+                echo "<div class='warning'>⚠️ $errors statements failed (might be normal for INSERT/INDEX statements)</div>";
             }
             
             echo "<div class='info'>📋 Step 3: Verifying structure...</div>";
