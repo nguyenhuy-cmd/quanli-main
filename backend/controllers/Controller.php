@@ -5,6 +5,9 @@
  */
 
 abstract class Controller {
+    private $cachedInput = null;
+    private $inputRead = false;
+    
     /**
      * Send JSON response
      * @param bool $success
@@ -56,8 +59,10 @@ abstract class Controller {
         
         if ($method === 'POST') {
             $input = $this->getJsonInput();
-            if (isset($input['_method'])) {
-                return strtoupper($input['_method']);
+            // Check the original input before _method was removed
+            $rawInput = $this->getRawJsonInput();
+            if (isset($rawInput['_method'])) {
+                return strtoupper($rawInput['_method']);
             }
             if (isset($_POST['_method'])) {
                 return strtoupper($_POST['_method']);
@@ -68,16 +73,30 @@ abstract class Controller {
     }
 
     /**
+     * Get raw JSON input (with _method if present)
+     * @return array
+     */
+    private function getRawJsonInput() {
+        if (!$this->inputRead) {
+            $input = file_get_contents('php://input');
+            $this->cachedInput = json_decode($input, true) ?? [];
+            $this->inputRead = true;
+        }
+        return $this->cachedInput;
+    }
+
+    /**
      * Get JSON input data
      * @return array
      */
     protected function getJsonInput() {
-        $input = file_get_contents('php://input');
-        $data = json_decode($input, true) ?? [];
+        $data = $this->getRawJsonInput();
         
         // Remove _method from data if present
         if (isset($data['_method'])) {
-            unset($data['_method']);
+            $cleaned = $data;
+            unset($cleaned['_method']);
+            return $cleaned;
         }
         
         return $data;
