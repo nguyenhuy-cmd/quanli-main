@@ -69,13 +69,13 @@ class LeaveController extends Controller {
             $this->validateRequired($data, ['employee_id', 'leave_type', 'start_date', 'end_date', 'reason']);
             
             // Calculate days if not provided
-            if (!isset($data['total_days'])) {
-                $data['total_days'] = $this->model->calculateDays($data['start_date'], $data['end_date']);
+            if (!isset($data['days'])) {
+                $data['days'] = $this->model->calculateDays($data['start_date'], $data['end_date']);
             }
             
             // Set default status if not provided
-            if (!isset($data['leave_status'])) {
-                $data['leave_status'] = 'pending';
+            if (!isset($data['status'])) {
+                $data['status'] = 'pending';
             }
             
             $data = $this->sanitize($data);

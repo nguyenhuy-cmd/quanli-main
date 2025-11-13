@@ -61,7 +61,7 @@ class PerformanceController extends Controller {
     private function create() {
         try {
             $data = $this->getJsonInput();
-            $this->validateRequired($data, ['employee_id', 'review_period_start', 'review_period_end', 'rating']);
+            $this->validateRequired($data, ['employee_id', 'period_start', 'period_end', 'rating']);
             
             // Set reviewer_id from current user if not provided
             if (!isset($data['reviewer_id'])) {
@@ -70,8 +70,8 @@ class PerformanceController extends Controller {
             }
             
             // Set default status if not provided
-            if (!isset($data['review_status'])) {
-                $data['review_status'] = 'draft';
+            if (!isset($data['status'])) {
+                $data['status'] = 'draft';
             }
             
             $data = $this->sanitize($data);

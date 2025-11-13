@@ -78,7 +78,7 @@ class AttendanceController extends Controller {
     private function create() {
         try {
             $data = $this->getJsonInput();
-            $this->validateRequired($data, ['employee_id', 'attendance_date']);
+            $this->validateRequired($data, ['employee_id', 'date']);
             $data = $this->sanitize($data);
             $id = $this->model->create($data);
             $this->sendSuccess($this->model->getById($id), 'Attendance recorded');
@@ -90,12 +90,12 @@ class AttendanceController extends Controller {
     private function checkIn() {
         try {
             $data = $this->getJsonInput();
-            $this->validateRequired($data, ['employee_id', 'date', 'check_in_time']);
+            $this->validateRequired($data, ['employee_id', 'date', 'check_in']);
             
             $id = $this->model->checkIn(
                 $data['employee_id'],
                 $data['date'],
-                $data['check_in_time']
+                $data['check_in']
             );
             
             $this->sendSuccess($this->model->getById($id), 'Check-in successful');
@@ -107,12 +107,12 @@ class AttendanceController extends Controller {
     private function checkOut() {
         try {
             $data = $this->getJsonInput();
-            $this->validateRequired($data, ['employee_id', 'date', 'check_out_time']);
+            $this->validateRequired($data, ['employee_id', 'date', 'check_out']);
             
             $success = $this->model->checkOut(
                 $data['employee_id'],
                 $data['date'],
-                $data['check_out_time']
+                $data['check_out']
             );
             
             if ($success) {
