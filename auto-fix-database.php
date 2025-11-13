@@ -8,7 +8,7 @@
 $host = 'sql209.infinityfree.com';
 $dbname = 'if0_40315513_hrm_db';
 $username = 'if0_40315513';
-$password = 'y2EL3L0jjpY'; // Thay bằng password thật của bạn
+$password = 'Huy140923'; // Thay bằng password thật của bạn
 
 header('Content-Type: text/html; charset=utf-8');
 ?>
