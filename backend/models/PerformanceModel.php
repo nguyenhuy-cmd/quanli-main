@@ -19,12 +19,12 @@ class PerformanceModel extends Model {
                         e.employee_code,
                         e.full_name as employee_name,
                         d.name as department_name,
-                        u.username as reviewer_name,
-                        CONCAT(DATE_FORMAT(pr.review_period_start, '%m/%Y'), ' - ', DATE_FORMAT(pr.review_period_end, '%m/%Y')) as review_period
+                        u.name as reviewer_name,
+                        CONCAT(DATE_FORMAT(pr.period_start, '%m/%Y'), ' - ', DATE_FORMAT(pr.period_end, '%m/%Y')) as review_period
                     FROM {$this->table} pr
                     JOIN employees e ON pr.employee_id = e.id
                     LEFT JOIN departments d ON e.department_id = d.id
-                    JOIN users u ON pr.reviewer_id = u.id
+                    LEFT JOIN users u ON pr.reviewer_id = u.id
                     ORDER BY pr.created_at DESC";
             
             return $this->query($sql);
@@ -42,10 +42,10 @@ class PerformanceModel extends Model {
         try {
             $sql = "SELECT 
                         pr.*,
-                        u.username as reviewer_name,
-                        CONCAT(DATE_FORMAT(pr.review_period_start, '%m/%Y'), ' - ', DATE_FORMAT(pr.review_period_end, '%m/%Y')) as review_period
+                        u.name as reviewer_name,
+                        CONCAT(DATE_FORMAT(pr.period_start, '%m/%Y'), ' - ', DATE_FORMAT(pr.period_end, '%m/%Y')) as review_period
                     FROM {$this->table} pr
-                    JOIN users u ON pr.reviewer_id = u.id
+                    LEFT JOIN users u ON pr.reviewer_id = u.id
                     WHERE pr.employee_id = :employee_id
                     ORDER BY pr.created_at DESC";
             
@@ -64,7 +64,7 @@ class PerformanceModel extends Model {
         try {
             $sql = "SELECT AVG(rating) as avg_rating 
                     FROM {$this->table} 
-                    WHERE employee_id = :employee_id AND review_status = 'completed'";
+                    WHERE employee_id = :employee_id AND status = 'completed'";
             
             $result = $this->query($sql, [':employee_id' => $employeeId]);
             return $result[0]['avg_rating'] ?? 0;
@@ -87,8 +87,8 @@ class PerformanceModel extends Model {
                         COUNT(CASE WHEN rating >= 2.5 AND rating < 3.5 THEN 1 END) as average_count,
                         COUNT(CASE WHEN rating >= 1.5 AND rating < 2.5 THEN 1 END) as below_avg_count,
                         COUNT(CASE WHEN rating < 1.5 THEN 1 END) as poor_count,
-                        COUNT(CASE WHEN review_status = 'completed' THEN 1 END) as completed_count,
-                        COUNT(CASE WHEN review_status = 'draft' THEN 1 END) as draft_count
+                        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_count,
+                        COUNT(CASE WHEN status = 'draft' THEN 1 END) as draft_count
                     FROM {$this->table}";
             
             $result = $this->query($sql);
@@ -114,7 +114,7 @@ class PerformanceModel extends Model {
                     FROM employees e
                     JOIN {$this->table} pr ON e.id = pr.employee_id
                     LEFT JOIN departments d ON e.department_id = d.id
-                    WHERE pr.review_status = 'completed'
+                    WHERE pr.status = 'completed'
                     GROUP BY e.id
                     HAVING COUNT(pr.id) > 0
                     ORDER BY avg_rating DESC, review_count DESC

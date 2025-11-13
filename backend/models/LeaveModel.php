@@ -19,7 +19,7 @@ class LeaveModel extends Model {
                         e.employee_code,
                         e.full_name,
                         d.name as department_name,
-                        u.username as approved_by_name
+                        u.name as approved_by_name
                     FROM {$this->table} l
                     JOIN employees e ON l.employee_id = e.id
                     LEFT JOIN departments d ON e.department_id = d.id
@@ -60,7 +60,7 @@ class LeaveModel extends Model {
                     FROM {$this->table} l
                     JOIN employees e ON l.employee_id = e.id
                     LEFT JOIN departments d ON e.department_id = d.id
-                    WHERE l.leave_status = :status
+                    WHERE l.status = :status
                     ORDER BY l.created_at DESC";
             
             return $this->query($sql, [':status' => $status]);
@@ -78,7 +78,7 @@ class LeaveModel extends Model {
     public function approve($leaveId, $approverId) {
         try {
             return $this->update($leaveId, [
-                'leave_status' => 'approved',
+                'status' => 'approved',
                 'approved_by' => $approverId,
                 'approved_at' => date('Y-m-d H:i:s')
             ]);
@@ -97,7 +97,7 @@ class LeaveModel extends Model {
     public function reject($leaveId, $approverId, $note = '') {
         try {
             $data = [
-                'leave_status' => 'rejected',
+                'status' => 'rejected',
                 'approved_by' => $approverId,
                 'approved_at' => date('Y-m-d H:i:s')
             ];
@@ -122,10 +122,10 @@ class LeaveModel extends Model {
         try {
             $sql = "SELECT 
                         COUNT(*) as total_requests,
-                        SUM(total_days) as total_days,
-                        COUNT(CASE WHEN leave_status = 'pending' THEN 1 END) as pending_count,
-                        COUNT(CASE WHEN leave_status = 'approved' THEN 1 END) as approved_count,
-                        COUNT(CASE WHEN leave_status = 'rejected' THEN 1 END) as rejected_count,
+                        SUM(days) as total_days,
+                        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
+                        COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count,
+                        COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected_count,
                         COUNT(CASE WHEN leave_type = 'annual' THEN 1 END) as annual_count,
                         COUNT(CASE WHEN leave_type = 'sick' THEN 1 END) as sick_count
                     FROM {$this->table}

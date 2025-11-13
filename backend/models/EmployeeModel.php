@@ -19,8 +19,7 @@ class EmployeeModel extends Model {
                         e.*,
                         d.name as department_name,
                         p.title as position_title,
-                        p.min_salary as position_min_salary,
-                        p.max_salary as position_max_salary
+                        p.base_salary as position_base_salary
                     FROM {$this->table} e
                     LEFT JOIN departments d ON e.department_id = d.id
                     LEFT JOIN positions p ON e.position_id = p.id

@@ -19,8 +19,8 @@ class SalaryModel extends Model {
                         e.employee_code,
                         e.full_name as employee_name,
                         d.name as department_name,
-                        MONTH(s.salary_month) as month,
-                        YEAR(s.salary_month) as year
+                        MONTH(s.payment_date) as month,
+                        YEAR(s.payment_date) as year
                     FROM {$this->table} s
                     JOIN employees e ON s.employee_id = e.id
                     LEFT JOIN departments d ON e.department_id = d.id
@@ -57,12 +57,12 @@ class SalaryModel extends Model {
                         e.employee_code,
                         e.full_name as employee_name,
                         d.name as department_name,
-                        MONTH(s.salary_month) as month,
-                        YEAR(s.salary_month) as year
+                        MONTH(s.payment_date) as month,
+                        YEAR(s.payment_date) as year
                     FROM {$this->table} s
                     JOIN employees e ON s.employee_id = e.id
                     LEFT JOIN departments d ON e.department_id = d.id
-                    WHERE DATE_FORMAT(s.salary_month, '%Y-%m') = :month
+                    WHERE s.payment_month = :month
                     ORDER BY s.id";
             
             return $this->query($sql, [':month' => $month]);
@@ -83,8 +83,8 @@ class SalaryModel extends Model {
                         AVG(total_salary) as avg_salary,
                         MAX(total_salary) as max_salary,
                         MIN(total_salary) as min_salary,
-                        COUNT(CASE WHEN payment_status = 'paid' THEN 1 END) as paid_count,
-                        COUNT(CASE WHEN payment_status = 'pending' THEN 1 END) as pending_count
+                        COUNT(CASE WHEN status = 'paid' THEN 1 END) as paid_count,
+                        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count
                     FROM {$this->table}";
             
             $result = $this->query($sql);

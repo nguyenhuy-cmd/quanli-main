@@ -22,7 +22,7 @@ class AttendanceModel extends Model {
                     FROM {$this->table} a
                     JOIN employees e ON a.employee_id = e.id
                     LEFT JOIN departments d ON e.department_id = d.id
-                    ORDER BY a.attendance_date DESC, a.id DESC";
+                    ORDER BY a.date DESC, a.id DESC";
             
             return $this->query($sql);
         } catch (Exception $e) {
@@ -43,12 +43,12 @@ class AttendanceModel extends Model {
             $params = [':employee_id' => $employeeId];
             
             if ($startDate && $endDate) {
-                $sql .= " AND attendance_date BETWEEN :start_date AND :end_date";
+                $sql .= " AND date BETWEEN :start_date AND :end_date";
                 $params[':start_date'] = $startDate;
                 $params[':end_date'] = $endDate;
             }
             
-            $sql .= " ORDER BY attendance_date DESC";
+            $sql .= " ORDER BY date DESC";
             
             return $this->query($sql, $params);
         } catch (Exception $e) {
@@ -71,7 +71,7 @@ class AttendanceModel extends Model {
                     FROM {$this->table} a
                     JOIN employees e ON a.employee_id = e.id
                     LEFT JOIN departments d ON e.department_id = d.id
-                    WHERE a.attendance_date = :date
+                    WHERE a.date = :date
                     ORDER BY e.full_name";
             
             return $this->query($sql, [':date' => $date]);
@@ -91,9 +91,9 @@ class AttendanceModel extends Model {
         try {
             $data = [
                 'employee_id' => $employeeId,
-                'attendance_date' => $date,
-                'check_in_time' => $time,
-                'attendance_status' => $time > '08:30:00' ? 'late' : 'present'
+                'date' => $date,
+                'check_in' => $time,
+                'status' => $time > '08:30:00' ? 'late' : 'present'
             ];
             
             return $this->create($data);
@@ -111,8 +111,8 @@ class AttendanceModel extends Model {
      */
     public function checkOut($employeeId, $date, $time) {
         try {
-            $sql = "SELECT id, check_in_time FROM {$this->table} 
-                    WHERE employee_id = :employee_id AND attendance_date = :date LIMIT 1";
+            $sql = "SELECT id, check_in FROM {$this->table} 
+                    WHERE employee_id = :employee_id AND date = :date LIMIT 1";
             $record = $this->query($sql, [
                 ':employee_id' => $employeeId,
                 ':date' => $date
@@ -122,12 +122,12 @@ class AttendanceModel extends Model {
                 throw new Exception("No check-in record found");
             }
             
-            $checkIn = strtotime($record[0]['check_in_time']);
+            $checkIn = strtotime($record[0]['check_in']);
             $checkOut = strtotime($time);
             $workHours = ($checkOut - $checkIn) / 3600;
             
             return $this->update($record[0]['id'], [
-                'check_out_time' => $time,
+                'check_out' => $time,
                 'work_hours' => round($workHours, 2)
             ]);
         } catch (Exception $e) {
@@ -146,10 +146,10 @@ class AttendanceModel extends Model {
             $sql = "SELECT 
                         COUNT(*) as total_days,
                         SUM(work_hours) as total_hours,
-                        COUNT(CASE WHEN attendance_status = 'present' THEN 1 END) as present_days,
-                        COUNT(CASE WHEN attendance_status = 'absent' THEN 1 END) as absent_days,
-                        COUNT(CASE WHEN attendance_status = 'late' THEN 1 END) as late_days,
-                        COUNT(CASE WHEN attendance_status = 'half_day' THEN 1 END) as half_days
+                        COUNT(CASE WHEN status = 'present' THEN 1 END) as present_days,
+                        COUNT(CASE WHEN status = 'absent' THEN 1 END) as absent_days,
+                        COUNT(CASE WHEN status = 'late' THEN 1 END) as late_days,
+                        COUNT(CASE WHEN status = 'early_leave' THEN 1 END) as early_leave_days
                     FROM {$this->table}
                     WHERE 1=1";
             
@@ -161,7 +161,7 @@ class AttendanceModel extends Model {
             }
             
             if ($month) {
-                $sql .= " AND DATE_FORMAT(attendance_date, '%Y-%m') = :month";
+                $sql .= " AND DATE_FORMAT(date, '%Y-%m') = :month";
                 $params[':month'] = $month;
             }
             
