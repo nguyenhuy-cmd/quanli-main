@@ -75,20 +75,28 @@ class PerformanceModule {
         const rows = this.performances.map(perf => {
             let ratingBadge = '';
             const score = parseFloat(perf.rating || 0);
-            if (score >= 9) ratingBadge = '<span class="badge bg-success">Xuất sắc</span>';
-            else if (score >= 8) ratingBadge = '<span class="badge bg-primary">Giỏi</span>';
-            else if (score >= 7) ratingBadge = '<span class="badge bg-info">Khá</span>';
-            else if (score >= 5) ratingBadge = '<span class="badge bg-warning">Trung bình</span>';
+            if (score >= 4.5) ratingBadge = '<span class="badge bg-success">Xuất sắc</span>';
+            else if (score >= 4) ratingBadge = '<span class="badge bg-primary">Giỏi</span>';
+            else if (score >= 3) ratingBadge = '<span class="badge bg-info">Khá</span>';
+            else if (score >= 2) ratingBadge = '<span class="badge bg-warning">Trung bình</span>';
             else ratingBadge = '<span class="badge bg-danger">Yếu</span>';
+
+            // Format review period
+            const periodStart = perf.period_start ? ui.formatDate(perf.period_start) : '-';
+            const periodEnd = perf.period_end ? ui.formatDate(perf.period_end) : '-';
+            const reviewPeriod = `${periodStart} - ${periodEnd}`;
+
+            // Format review date
+            const reviewDate = perf.review_date ? ui.formatDate(perf.review_date) : 'Chưa có';
 
             return [
                 perf.id,
                 perf.employee_name || 'N/A',
-                perf.review_period || 'N/A',
-                `<strong>${score.toFixed(1)}/10</strong>`,
+                reviewPeriod,
+                `<strong>${score.toFixed(1)}/5</strong>`,
                 ratingBadge,
                 perf.reviewer_name || 'N/A',
-                ui.formatDate(perf.review_date),
+                reviewDate,
                 `
                     <button class="btn btn-sm btn-info" onclick="performanceModule.viewDetail(${perf.id})">
                         <i class="bi bi-eye"></i>
