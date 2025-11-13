@@ -100,12 +100,17 @@ class APIService {
             try {
                 result = JSON.parse(text);
             } catch (e) {
-                console.error('JSON parse error:', text);
-                throw new Error('Invalid JSON response from server');
+                console.error('JSON parse error:', text.substring(0, 500));
+                console.error('Full response:', text);
+                throw new Error('Invalid JSON response from server: ' + e.message);
             }
 
             if (!response.ok) {
-                throw new Error(result.message || 'Request failed');
+                // Include error details if available
+                const errorMsg = result.message || 'Request failed';
+                const errorDetails = result.error ? 
+                    ` (${result.error.file}:${result.error.line})` : '';
+                throw new Error(errorMsg + errorDetails);
             }
 
             return result;

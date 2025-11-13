@@ -5,6 +5,42 @@
  * by setting proper headers before any output
  */
 
+// Set error handler to catch all errors
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    // Clear any output
+    if (ob_get_level()) ob_clean();
+    
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'success' => false,
+        'message' => 'Server error: ' . $errstr,
+        'error' => [
+            'file' => basename($errfile),
+            'line' => $errline
+        ]
+    ]);
+    exit;
+});
+
+// Set exception handler
+set_exception_handler(function($exception) {
+    // Clear any output
+    if (ob_get_level()) ob_clean();
+    
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'success' => false,
+        'message' => 'Server exception: ' . $exception->getMessage(),
+        'error' => [
+            'file' => basename($exception->getFile()),
+            'line' => $exception->getLine()
+        ]
+    ]);
+    exit;
+});
+
 // Start output buffering FIRST
 ob_start();
 
@@ -32,8 +68,19 @@ if (ob_get_level()) {
     ob_clean();
 }
 
-// Now load the actual API
-require_once __DIR__ . '/api.php';
+try {
+    // Now load the actual API
+    require_once __DIR__ . '/api.php';
+} catch (Exception $e) {
+    // Clear buffer
+    if (ob_get_level()) ob_clean();
+    
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'API Error: ' . $e->getMessage()
+    ]);
+}
 
 // Flush clean JSON output
 ob_end_flush();

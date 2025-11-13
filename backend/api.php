@@ -7,9 +7,30 @@
 // Set error handler to always return JSON
 set_error_handler(function($errno, $errstr, $errfile, $errline) {
     http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
     echo json_encode([
         'success' => false,
-        'message' => 'Server error: ' . $errstr
+        'message' => 'Server error: ' . $errstr,
+        'error' => [
+            'file' => basename($errfile),
+            'line' => $errline,
+            'type' => $errno
+        ]
+    ]);
+    exit;
+});
+
+// Set exception handler
+set_exception_handler(function($exception) {
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'success' => false,
+        'message' => 'Server exception: ' . $exception->getMessage(),
+        'error' => [
+            'file' => basename($exception->getFile()),
+            'line' => $exception->getLine()
+        ]
     ]);
     exit;
 });
