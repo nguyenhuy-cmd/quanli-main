@@ -43,6 +43,7 @@ class LeaveModule {
             
             if (response.success) {
                 this.leaves = response.data;
+                console.log('Leaves data:', this.leaves); // DEBUG: Check data structure
                 this.renderTable();
             }
         } catch (error) {
@@ -74,9 +75,9 @@ class LeaveModule {
         const headers = ['ID', 'Nhân viên', 'Loại nghỉ phép', 'Từ ngày', 'Đến ngày', 'Số ngày', 'Trạng thái', 'Thao tác'];
         const rows = this.leaves.map(leave => {
             let statusBadge = '';
-            if (leave.leave_status === 'approved') statusBadge = '<span class="badge bg-success">Đã duyệt</span>';
-            else if (leave.leave_status === 'pending') statusBadge = '<span class="badge bg-warning">Chờ duyệt</span>';
-            else if (leave.leave_status === 'rejected') statusBadge = '<span class="badge bg-danger">Từ chối</span>';
+            if (leave.status === 'approved') statusBadge = '<span class="badge bg-success">Đã duyệt</span>';
+            else if (leave.status === 'pending') statusBadge = '<span class="badge bg-warning">Chờ duyệt</span>';
+            else if (leave.status === 'rejected') statusBadge = '<span class="badge bg-danger">Từ chối</span>';
             else statusBadge = '<span class="badge bg-secondary">Khác</span>';
 
             return [
@@ -85,13 +86,13 @@ class LeaveModule {
                 leave.leave_type || 'N/A',
                 ui.formatDate(leave.start_date),
                 ui.formatDate(leave.end_date),
-                leave.total_days || '-',
+                leave.days || '-',
                 statusBadge,
                 `
-                    <button class="btn btn-sm btn-success" onclick="leaveModule.approve(${leave.id})" ${leave.leave_status !== 'pending' ? 'disabled' : ''}>
+                    <button class="btn btn-sm btn-success" onclick="leaveModule.approve(${leave.id})" ${leave.status !== 'pending' ? 'disabled' : ''}>
                         <i class="bi bi-check"></i>
                     </button>
-                    <button class="btn btn-sm btn-danger" onclick="leaveModule.reject(${leave.id})" ${leave.leave_status !== 'pending' ? 'disabled' : ''}>
+                    <button class="btn btn-sm btn-danger" onclick="leaveModule.reject(${leave.id})" ${leave.status !== 'pending' ? 'disabled' : ''}>
                         <i class="bi bi-x"></i>
                     </button>
                 `
