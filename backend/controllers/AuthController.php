@@ -114,7 +114,7 @@ class AuthController extends Controller {
             
             // Register user
             $userId = $this->userModel->register([
-                'username' => $data['name'],  // Map 'name' from frontend to 'username' in DB
+                'name' => $data['name'],  // Use 'name' to match DB column
                 'email' => $data['email'],
                 'password' => $data['password'],
                 'role' => $data['role'] ?? 'employee'
