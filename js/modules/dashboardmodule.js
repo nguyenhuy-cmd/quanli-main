@@ -119,7 +119,7 @@ class DashboardModule {
             // Load pending leaves
             const leaveResponse = await api.get('?resource=leaves');
             if (leaveResponse.success) {
-                const pending = leaveResponse.data.filter(l => l.leave_status === 'pending');
+                const pending = leaveResponse.data.filter(l => l.status === 'pending');
                 document.getElementById('pendingLeaves').textContent = pending.length || 0;
             }
 
@@ -158,9 +158,9 @@ class DashboardModule {
                 if (todayRecords.length === 0) {
                     container.innerHTML = '<p class="text-muted">Chưa có dữ liệu chấm công hôm nay</p>';
                 } else {
-                    const present = todayRecords.filter(a => a.attendance_status === 'present').length;
-                    const late = todayRecords.filter(a => a.attendance_status === 'late').length;
-                    const absent = todayRecords.filter(a => a.attendance_status === 'absent').length;
+                    const present = todayRecords.filter(a => a.status === 'present').length;
+                    const late = todayRecords.filter(a => a.status === 'late').length;
+                    const absent = todayRecords.filter(a => a.status === 'absent').length;
                     
                     container.innerHTML = `
                         <div class="row text-center">
